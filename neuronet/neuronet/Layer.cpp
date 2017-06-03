@@ -3,12 +3,14 @@
 NeuroNet::Layer::Layer(int neuronCount, int prevNeuronCount)
 {
 	Weights.InitRandom(prevNeuronCount, neuronCount);
+	Correct.Init(prevNeuronCount, neuronCount);
 	_layer.resize(neuronCount);
 }
 
 NeuroNet::Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction)
 {
 	Weights.InitRandom(prevNeuronCount, neuronCount);
+	Correct.Init(prevNeuronCount, neuronCount);
 	_layer.resize(neuronCount, Neuron(activationFunction));
 }
 

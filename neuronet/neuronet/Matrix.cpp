@@ -17,7 +17,7 @@ void NeuroNet::Matrix::InitRandom(int n, int m)
 	{
 		for (int j = 0; j < m; ++j)
 		{
-			_matrix[i][j] = rand() * 1.0/ (RAND_MAX);
+			_matrix[i][j] = (rand()%101)*1.0/100.0;
 		}
 	}
 }
