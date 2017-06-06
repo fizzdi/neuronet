@@ -19,7 +19,7 @@ namespace NeuroNet
 
 	class NeuralNetwork
 	{
-	private:
+	protected:
 		std::vector<Layer> _layers;
 	public:
 		void Init(int InputCount, int OutputCount, int NeuronCount);

@@ -1,4 +1,5 @@
 #include "Matrix.h"
+#include <exception>
 
 NeuroNet::Matrix::Matrix()
 {
@@ -23,9 +24,19 @@ void NeuroNet::Matrix::InitRandom(int n, int m)
 	{
 		for (int j = 0; j < m; ++j)
 		{
-			_matrix[i][j] = (rand() % 101)*1.0 / 100.0;
+			_matrix[i][j] = (rand())*1.0 / (RAND_MAX);
 		}
 	}
+}
+
+int NeuroNet::Matrix::GetHorizontalSize() const
+{
+	return (GetVerticalSize() > 0 ? _matrix[0].size() : 0);
+}
+
+int NeuroNet::Matrix::GetVerticalSize() const
+{
+	return _matrix.size();
 }
 
 const int NeuroNet::Matrix::size()
@@ -35,27 +46,25 @@ const int NeuroNet::Matrix::size()
 
 void NeuroNet::Matrix::Clear()
 {
-	int n = this->size();
-	int m = n > 0 ? (*this)[0].size() : 0;
+	int n = size();
+	int m = (n > 0 ? _matrix[0].size() : 0);
 	Init(n, m);
 }
 
 NeuroNet::Matrix NeuroNet::Matrix::operator*(const Matrix & rhs)
 {
-	int n = this->_matrix.size();
-	int m = rhs._matrix.size() > 0 ? rhs._matrix[0].size() : 0;
+	if (GetHorizontalSize() != rhs.GetVerticalSize())
+		throw std::logic_error("Wrong sizes in multiplication operation");
+
+	int n = GetVerticalSize();
+	int m = rhs.GetHorizontalSize();
+	int nm = GetHorizontalSize();
 	Matrix res(n, m);
 
 	for (int i = 0; i < n; ++i)
-	{
 		for (int j = 0; j < m; ++j)
-		{
-			for (int k = 0; k < rhs._matrix.size(); ++k)
-			{
+			for (int k = 0; k < nm; ++k)
 				res._matrix[i][j] += _matrix[i][k] * rhs._matrix[k][j];
-			}
-		}
-	}
 	return res;
 }
 
@@ -131,17 +140,14 @@ NeuroNet::Matrix NeuroNet::Matrix::operator=(const Matrix & rhs)
 
 NeuroNet::Matrix NeuroNet::Matrix::operator!()
 {
-	Matrix old = *this;
-	this->_matrix.resize(this->_matrix[0].size());
-	for (int i = 0; i < this->_matrix.size(); ++i)
-	{
-		this->_matrix[i].resize(this->_matrix.size());
-		for (int j = 0; j < this->_matrix[i].size(); ++j)
-		{
-			this->_matrix[i][j] = old._matrix[j][i];
-		}
-	}
-	return *this;
+	Matrix old;
+	int n = GetHorizontalSize();
+	int m = GetVerticalSize();
+	old.Init(n, m);
+	for (int i = 0; i < m; ++i)
+		for (int j = 0; j < n; ++j)
+			old._matrix[j][i] = _matrix[i][j];
+	return old;
 }
 
 std::vector<double>& NeuroNet::Matrix::operator[](const int i)
@@ -165,6 +171,16 @@ const double NeuroNet::Matrix::sum()
 		for (int j = 0; j < _matrix[i].size(); ++j)
 			ans += _matrix[i][j];
 	return ans;
+}
+
+std::vector<std::vector<double>>::iterator NeuroNet::Matrix::rowbegin()
+{
+	return _matrix.begin();
+}
+
+std::vector<std::vector<double>>::iterator NeuroNet::Matrix::rowend()
+{
+	return _matrix.end();
 }
 
 NeuroNet::Matrix NeuroNet::Matrix::operator=(const std::vector<double>& rhs)

@@ -1,15 +1,17 @@
 #include "NeuralNetwork.h"
+#include "Elman.h"
+#include <ctime>
 using namespace std;
 const int num_check = 10;
-const int HiddenNeuron = 7; //sin - 30
-const int SampleCount = 10;
-const int Epoh = 5000;
+const int HiddenNeuron = 20; //sin - 30
+const int SampleCount = 20;
+const int Epoh = 1000;
 #define TESTFUNC sin
 int main()
 {
 	std::ios::sync_with_stdio(false);
-	NeuroNet::NeuralNetwork net;
-	srand(17);
+	NeuroNet::Elman net;
+	srand(time(NULL));
 	/*net.Init(2, 1, 2);
 	net.TrainingSet.push_back(NeuroNet::Problem({ 1,1 }, { 0 }));
 	net.TrainingSet.push_back(NeuroNet::Problem({ 0,0 }, { 0 }));
@@ -24,7 +26,7 @@ int main()
 		double y = TESTFUNC(x);
 		net.TrainingSet.push_back(NeuroNet::Problem({ x }, { y }));
 	}
-	net.RunTrainingSet(1);
+	net.RunTrainingSet();
 	double lstError = 0.0;
 	double maxError = 0.0;
 	for (int i = 0; i < Epoh; ++i)
@@ -32,7 +34,7 @@ int main()
 		lstError = maxError;
 		net.CorrectWeights();
 		//cout << endl << endl << "CORRECT" << endl << endl;
-		maxError = net.RunTrainingSet(1);
+		maxError = net.RunTrainingSet();
 		cout << i << ") " << maxError << endl;
 		if (maxError < 0.000001 || abs(maxError - lstError) < 0.00000001)
 		{

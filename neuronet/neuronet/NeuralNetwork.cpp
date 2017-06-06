@@ -6,23 +6,25 @@ void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCo
 {
 	_layers.clear();
 	_layers.push_back(Layer(InputCount, 0, LINE));
-	_layers.push_back(Layer(NeuronCount, InputCount, TANH));
+	_layers.push_back(Layer(NeuronCount, InputCount, SIGM));
 	_layers.push_back(Layer(OutputCount, NeuronCount, LINE));
 }
 
+//TODO global var debug
 double NeuroNet::NeuralNetwork::RunTrainingSet(bool print)
 {
 	double maxError = 0.0;
 	for (int i = 0; i < _layers.size(); ++i)
-	{
-		_layers[i].OldCorrect = _layers[i].Correct;
 		_layers[i].Correct.Clear();
-	}
 
 	for each (Problem test in TrainingSet)
 	{
 		//init input layer
-		_layers[0].States = test.inputs;
+		std::copy(
+			test.inputs.rowbegin(),
+			test.inputs.rowend(),
+			_layers[0].States.rowbegin()
+		);
 		_layers[0].CalculateAxons();
 
 		//init hidden and output layers
@@ -54,7 +56,7 @@ double NeuroNet::NeuralNetwork::CalculateError(Problem & test, bool print)
 	double error = ((test.outputs - _layers.back().Axons)*(test.outputs - _layers.back().Axons)).sum() / 2;
 	if (print)
 	{
-		std::cout << "Error: " << error * 100 << "% (" << error << ")" << std::endl;
+		std::cout << "Error: " << error << std::endl;
 		std::cout << "---------------------------------------------------------------------------------" << std::endl;
 	}
 	return error;
@@ -70,14 +72,11 @@ void NeuroNet::NeuralNetwork::CorrectWeights()
 
 void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 {
+	//PROP
 	int countLayers = _layers.size();
-	/*for (int i = 0; i < _layers.back().Axons.size(); ++i)
-	{
-		_layers.back().Delta[i][0] = ((test.outputs[i][0] - _layers.back().Axons[i][0]) * _layers.back().GetDiff(_layers.back().Axons[i][0]));
-	}*/
-	//int countLayers = _layers.size();
+
 	//calc delta
-	_layers.back().Delta = (test.outputs - _layers.back().Axons) * _layers.back().GetDiff();
+	_layers.back().Delta = (test.outputs - _layers.back().Axons).multiplication(_layers.back().GetDiff());
 
 	for (int i = countLayers - 2; i >= 0; --i)
 		_layers[i].Delta = (_layers[i + 1].Weights* _layers[i + 1].Delta).multiplication(_layers[i].GetDiff());

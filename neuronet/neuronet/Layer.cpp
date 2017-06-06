@@ -11,6 +11,7 @@ NeuroNet::Matrix NeuroNet::Layer::sigm_function(Matrix m)
 
 NeuroNet::Matrix NeuroNet::Layer::tanh_function(Matrix m)
 {
+	//TODO get vertical and horizontal sizes
 	Matrix res(m.size(), m[0].size());
 	for (int i = 0; i < m.size(); ++i)
 		for (int j = 0; j < m[0].size(); ++j)
@@ -46,14 +47,10 @@ NeuroNet::Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFu
 	Delta.Init(neuronCount, 1);
 }
 
+//TODO add const operation
 void NeuroNet::Layer::CalculateStates(Layer & prevLayer)
 {
-	for (int i = 0; i < this->States.size(); ++i)
-	{
-		double newState = 0;
-		for (int j = 0; j < prevLayer.States.size(); ++j)
-			States[i][0] += prevLayer.Axons[j][0] * this->Weights[j][i];
-	}
+	States = !(!prevLayer.Axons * Weights);
 }
 
 void NeuroNet::Layer::CalculateAxons()

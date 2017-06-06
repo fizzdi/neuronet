@@ -27,6 +27,5 @@ namespace NeuroNet
 		double GetDiff(double val);
 		Matrix Weights;
 		Matrix Correct;
-		Matrix OldCorrect;
 	};
 }
