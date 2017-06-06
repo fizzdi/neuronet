@@ -1,8 +1,8 @@
 #include "NeuralNetwork.h"
 using namespace std;
 const int num_check = 10;
-const int HiddenNeuron = 40; //sin - 30
-const int SampleCount = 3;
+const int HiddenNeuron = 7; //sin - 30
+const int SampleCount = 10;
 const int Epoh = 5000;
 #define TESTFUNC sin
 int main()

@@ -71,27 +71,16 @@ void NeuroNet::NeuralNetwork::CorrectWeights()
 void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 {
 	int countLayers = _layers.size();
-	for (int i = 0; i < _layers.back().Axons.size(); ++i)
+	/*for (int i = 0; i < _layers.back().Axons.size(); ++i)
 	{
 		_layers.back().Delta[i][0] = ((test.outputs[i][0] - _layers.back().Axons[i][0]) * _layers.back().GetDiff(_layers.back().Axons[i][0]));
-	}
+	}*/
 	//int countLayers = _layers.size();
 	//calc delta
 	_layers.back().Delta = (test.outputs - _layers.back().Axons) * _layers.back().GetDiff();
 
 	for (int i = countLayers - 2; i >= 0; --i)
-	{
-		for (int j = 0; j < _layers[i].Axons.size(); ++j)
-		{
-			//calc sum(Wi * deltai)
-			double sum = 0.0;
-			for (int k = 0; k < _layers[i + 1].Axons.size(); ++k)
-			{
-				sum += _layers[i + 1].Delta[k][0] * _layers[i + 1].Weights[j][k];
-			}
-			_layers[i].Delta[j][0] = _layers[i].GetDiff(_layers[i].Axons[j][0]) * sum;
-		}
-	}
+		_layers[i].Delta = (_layers[i + 1].Weights* _layers[i + 1].Delta).multiplication(_layers[i].GetDiff());
 
 	for (int i = 1; i < countLayers; ++i)
 	{
@@ -100,9 +89,7 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 			for (int k = 0; k < _layers[i - 1].Axons.size(); ++k)
 			{
 				double grad = _layers[i].Delta[j][0] * _layers[i - 1].Axons[k][0];
-				//double grad = _layers[i-1][k].Delta() * _layers[i][j].GetAxon();
-				//TODO Moment
-				_layers[i].Correct[k][j] += EducationalSpeed * grad + Alpha*_layers[i].OldCorrect[k][j];
+				_layers[i].Correct[k][j] += EducationalSpeed * grad;
 			}
 		}
 	}
