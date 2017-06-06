@@ -32,14 +32,27 @@ double NeuroNet::NeuralNetwork::RunTrainingSet(bool print)
 			_layers[i].CalculateStates(_layers[i - 1]);
 			_layers[i].CalculateAxons();
 		}
-
 		if (print)
-		{
 			PrintProblemResult(test);
-			maxError = std::max(maxError, CalculateError(test, print));
-		}
+		maxError = std::max(maxError, CalculateError(test, print));
 		CalcCorrectWeights(test);
 	}
+
+	/*for (int i = 0; i < _layers.size(); ++i)
+	{
+	if (_layers[i].Correct.GetVerticalSize() != _layers[i].Weights.GetVerticalSize() ||
+	_layers[i].Correct.GetHorizontalSize() != _layers[i].Weights.GetHorizontalSize())
+	int y = 0;
+	for (int j = 0; j < _layers[i].Correct.GetVerticalSize(); ++j)
+	{
+	for (int k = 0; k < _layers[i].Correct.GetHorizontalSize(); ++k)
+	{
+	std::cout << _layers[i].Weights.get(j,k) << " " << _layers[i].Correct.get(j, k) << std::endl;
+	}
+	}
+	}
+	std::cout << std::endl;*/
+
 	return maxError;
 }
 
@@ -59,7 +72,8 @@ double NeuroNet::NeuralNetwork::CalculateError(const Problem & test, bool print)
 	{
 		error += (test.outputs[i] - _layers.back()[i].GetAxon())*(test.outputs[i] - _layers.back()[i].GetAxon());
 	}
-	error /= test.outputs.size();
+	//error /= test.outputs.size();
+	error /= 2;
 	if (print)
 	{
 		std::cout << "Error: " << error * 100 << "% (" << error << ")" << std::endl;
@@ -72,7 +86,13 @@ void NeuroNet::NeuralNetwork::CorrectWeights()
 {
 	for (int i = 0; i < _layers.size(); ++i)
 	{
-		_layers[i].Weights += _layers[i].Correct;
+		for (int j = 0; j < _layers[i].Correct.GetVerticalSize(); ++j)
+		{
+			for (int k = 0; k < _layers[i].Correct.GetHorizontalSize(); ++k)
+			{
+				_layers[i].Weights.add(j, k, _layers[i].Correct.get(j, k));
+			}
+		}
 	}
 }
 
@@ -107,6 +127,8 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(const Problem& test)
 			for (int k = 0; k < _layers[i - 1].Count(); ++k)
 			{
 				double grad = _layers[i][j].Delta() * _layers[i - 1][k].GetAxon();
+				//double grad = _layers[i-1][k].Delta() * _layers[i][j].GetAxon();
+				//TODO Moment
 				_layers[i].Correct.add(k, j, EducationalSpeed * grad + Alpha*_layers[i].OldCorrect.get(k, j));
 			}
 		}
