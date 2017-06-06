@@ -47,9 +47,9 @@ void NeuroNet::Neuron::CalculateAxon()
 		break;
 	}
 
-	std::ofstream f("debug.txt", std::ios::app);
+/*	std::ofstream f("debug.txt", std::ios::app);
 	f << (_aftype == SIGM ? "SIGM" : "LINE") << " f(" << _state << ") = " << _axon << std::endl;
-	f.close();
+	f.close();*/
 }
 
 double NeuroNet::Neuron::Delta()

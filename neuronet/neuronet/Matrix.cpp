@@ -28,35 +28,15 @@ void NeuroNet::Matrix::InitRandom(int n, int m)
 	}
 }
 
-double NeuroNet::Matrix::get(int i, int j)
-{
-	return _matrix[i][j];
-}
-
-double NeuroNet::Matrix::set(int i, int j, double val)
-{
-	return _matrix[i][j] = val;
-}
-
-double NeuroNet::Matrix::add(int i, int j, double val)
-{
-	return _matrix[i][j] += val;
-}
-
-int NeuroNet::Matrix::GetHorizontalSize()
-{
-	return _matrix.size() > 0 ? _matrix[0].size() : 0;
-}
-
-int NeuroNet::Matrix::GetVerticalSize()
+int NeuroNet::Matrix::size()
 {
 	return _matrix.size();
 }
 
 void NeuroNet::Matrix::Clear()
 {
-	int n = GetVerticalSize();
-	int m = GetHorizontalSize();
+	int n = this->size();
+	int m = n > 0 ? (*this)[0].size() : 0;
 	Init(n, m);
 }
 
@@ -111,4 +91,9 @@ NeuroNet::Matrix NeuroNet::Matrix::operator=(const std::vector<std::vector<doubl
 {
 	_matrix = rhs;
 	return *this;
+}
+
+std::vector<double>& NeuroNet::Matrix::operator[](const int i)
+{
+	return _matrix[i];
 }

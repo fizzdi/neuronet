@@ -20,7 +20,7 @@ void NeuroNet::Layer::CalculateStates(Layer & prevLayer)
 	{
 		double newState = 0;
 		for (int j = 0; j < prevLayer.Count(); ++j)
-			newState += prevLayer[j].GetAxon() * this->Weights.get(j,i);
+			newState += prevLayer[j].GetAxon() * this->Weights[j][i];
 		this->_layer[i].SetState(newState);
 	}
 }

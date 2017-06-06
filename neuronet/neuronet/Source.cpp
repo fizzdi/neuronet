@@ -1,10 +1,10 @@
 #include "NeuralNetwork.h"
 using namespace std;
 const int num_check = 10;
-const int HiddenNeuron = 30; //sin - 30
+const int HiddenNeuron = 40; //sin - 30
 const int SampleCount = 10;
-const int Epoh = 100;
-#define TESTFUNC cos
+const int Epoh = 5000;
+#define TESTFUNC sin
 int main()
 {
 	std::ios::sync_with_stdio(false);
@@ -33,8 +33,8 @@ int main()
 		net.CorrectWeights();
 		//cout << endl << endl << "CORRECT" << endl << endl;
 		maxError = net.RunTrainingSet();
-	//	cout << i << ") " << maxError << endl;
-		if (maxError < 0.001 || abs(maxError - lstError) < 0.0001)
+		cout << i << ") " << maxError << endl;
+		if (maxError < 0.000001 || abs(maxError - lstError) < 0.00000001)
 		{
 			cout << i << endl;
 			break;

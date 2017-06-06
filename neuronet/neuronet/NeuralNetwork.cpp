@@ -38,21 +38,6 @@ double NeuroNet::NeuralNetwork::RunTrainingSet(bool print)
 		CalcCorrectWeights(test);
 	}
 
-	/*for (int i = 0; i < _layers.size(); ++i)
-	{
-	if (_layers[i].Correct.GetVerticalSize() != _layers[i].Weights.GetVerticalSize() ||
-	_layers[i].Correct.GetHorizontalSize() != _layers[i].Weights.GetHorizontalSize())
-	int y = 0;
-	for (int j = 0; j < _layers[i].Correct.GetVerticalSize(); ++j)
-	{
-	for (int k = 0; k < _layers[i].Correct.GetHorizontalSize(); ++k)
-	{
-	std::cout << _layers[i].Weights.get(j,k) << " " << _layers[i].Correct.get(j, k) << std::endl;
-	}
-	}
-	}
-	std::cout << std::endl;*/
-
 	return maxError;
 }
 
@@ -86,13 +71,7 @@ void NeuroNet::NeuralNetwork::CorrectWeights()
 {
 	for (int i = 0; i < _layers.size(); ++i)
 	{
-		for (int j = 0; j < _layers[i].Correct.GetVerticalSize(); ++j)
-		{
-			for (int k = 0; k < _layers[i].Correct.GetHorizontalSize(); ++k)
-			{
-				_layers[i].Weights.add(j, k, _layers[i].Correct.get(j, k));
-			}
-		}
+		_layers[i].Weights += _layers[i].Correct;
 	}
 }
 
@@ -113,7 +92,7 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(const Problem& test)
 			double sum = 0.0;
 			for (int k = 0; k < _layers[i + 1].Count(); ++k)
 			{
-				sum += _layers[i + 1][k].Delta() * _layers[i + 1].Weights.get(j, k);
+				sum += _layers[i + 1][k].Delta() * _layers[i + 1].Weights[j][k];
 			}
 			double newDelta = _layers[i][j].GetDiff() * sum;
 			_layers[i][j].Delta(newDelta);
@@ -129,7 +108,7 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(const Problem& test)
 				double grad = _layers[i][j].Delta() * _layers[i - 1][k].GetAxon();
 				//double grad = _layers[i-1][k].Delta() * _layers[i][j].GetAxon();
 				//TODO Moment
-				_layers[i].Correct.add(k, j, EducationalSpeed * grad + Alpha*_layers[i].OldCorrect.get(k, j));
+				_layers[i].Correct[k][j] += EducationalSpeed * grad + Alpha*_layers[i].OldCorrect[k][j];
 			}
 		}
 	}
