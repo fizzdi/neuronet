@@ -30,7 +30,7 @@ namespace NeuroNet
 		void PrintProblemResult(const Problem& test);
 		double CalculateError(const Problem& test, bool print = false);
 		void CorrectWeights();
-		void CalcCorrectWeights(const Problem& test);
+		void CalcCorrectWeights(const Problem& test); 
 
 		std::vector<double> Run(std::vector<double> &inputs);
 	};
