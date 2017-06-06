@@ -7,10 +7,10 @@ void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCo
 	_layers.clear();
 	_layers.push_back(Layer(InputCount, 0, LINE));
 	_layers.push_back(Layer(NeuronCount, InputCount, TANH));
-	_layers.push_back(Layer(OutputCount, NeuronCount, TANH));
+	_layers.push_back(Layer(OutputCount, NeuronCount, LINE));
 }
 
-double NeuroNet::NeuralNetwork::RunProblemSet()
+double NeuroNet::NeuralNetwork::RunTrainingSet(bool print)
 {
 	double maxError = 0.0;
 	for (int i = 0; i < _layers.size(); ++i)
@@ -19,7 +19,7 @@ double NeuroNet::NeuralNetwork::RunProblemSet()
 		_layers[i].Correct.Clear();
 	}
 
-	for each (Problem test in ProblemSet)
+	for each (Problem test in TrainingSet)
 	{
 		//init input layer
 		for (int i = 0; i < test.inputs.size(); ++i)
@@ -33,26 +33,13 @@ double NeuroNet::NeuralNetwork::RunProblemSet()
 			_layers[i].CalculateAxons();
 		}
 
-		PrintProblemResult(test);
-		maxError = std::max(maxError, CalculateError(test));
+		if (print)
+		{
+			PrintProblemResult(test);
+			maxError = std::max(maxError, CalculateError(test, print));
+		}
 		CalcCorrectWeights(test);
 	}
-
-	/*for (int i = 0; i < _layers.size(); ++i)
-	{
-		if (_layers[i].Correct.GetVerticalSize() != _layers[i].Weights.GetVerticalSize() ||
-			_layers[i].Correct.GetHorizontalSize() != _layers[i].Weights.GetHorizontalSize())
-			int y = 0;
-		for (int j = 0; j < _layers[i].Correct.GetVerticalSize(); ++j)
-		{
-			for (int k = 0; k < _layers[i].Correct.GetHorizontalSize(); ++k)
-			{
-				std::cout << _layers[i].Weights.get(j,k) << " " << _layers[i].Correct.get(j, k) << std::endl;
-			}
-		}
-	}
-	std::cout << std::endl;*/
-
 	return maxError;
 }
 
@@ -64,7 +51,7 @@ void NeuroNet::NeuralNetwork::PrintProblemResult(const Problem & test)
 		std::cout << "\toutput[" << i << "] = " << test.outputs[i] << std::endl;
 }
 
-double NeuroNet::NeuralNetwork::CalculateError(const Problem & test)
+double NeuroNet::NeuralNetwork::CalculateError(const Problem & test, bool print)
 {
 	//MSE
 	double error = 0.0;
@@ -73,8 +60,11 @@ double NeuroNet::NeuralNetwork::CalculateError(const Problem & test)
 		error += (test.outputs[i] - _layers.back()[i].GetAxon())*(test.outputs[i] - _layers.back()[i].GetAxon());
 	}
 	error /= test.outputs.size();
-	std::cout << "Error: " << error * 100 << "% (" << error << ")" << std::endl;
-	std::cout << "---------------------------------------------------------------------------------" << std::endl;
+	if (print)
+	{
+		std::cout << "Error: " << error * 100 << "% (" << error << ")" << std::endl;
+		std::cout << "---------------------------------------------------------------------------------" << std::endl;
+	}
 	return error;
 }
 
@@ -82,13 +72,7 @@ void NeuroNet::NeuralNetwork::CorrectWeights()
 {
 	for (int i = 0; i < _layers.size(); ++i)
 	{
-		for (int j = 0; j < _layers[i].Correct.GetVerticalSize(); ++j)
-		{
-			for (int k = 0; k < _layers[i].Correct.GetHorizontalSize(); ++k)
-			{
-				_layers[i].Weights.add(j, k, _layers[i].Correct.get(j, k));
-			}
-		}
+		_layers[i].Weights += _layers[i].Correct;
 	}
 }
 
@@ -123,9 +107,7 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(const Problem& test)
 			for (int k = 0; k < _layers[i - 1].Count(); ++k)
 			{
 				double grad = _layers[i][j].Delta() * _layers[i - 1][k].GetAxon();
-				//double grad = _layers[i-1][k].Delta() * _layers[i][j].GetAxon();
-				//TODO Moment
-				_layers[i].Correct.add(k, j, EducationalSpeed * grad + Alpha*_layers[i].OldCorrect.get(k,j));
+				_layers[i].Correct.add(k, j, EducationalSpeed * grad + Alpha*_layers[i].OldCorrect.get(k, j));
 			}
 		}
 	}
