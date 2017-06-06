@@ -1,42 +1,118 @@
 #include "Layer.h"
 
-NeuroNet::Layer::Layer(int neuronCount, int prevNeuronCount)
+NeuroNet::Matrix NeuroNet::Layer::sigm_function(Matrix m)
 {
-	Weights.InitRandom(prevNeuronCount, neuronCount);
-	Correct.Init(prevNeuronCount, neuronCount);
-	_layer.resize(neuronCount);
+	Matrix res(m.size(), m[0].size());
+	for (int i = 0; i < m.size(); ++i)
+		for (int j = 0; j < m[0].size(); ++j)
+			res[i][j] = m[i][j] <= -35 ? m[i][j] = 10e-15 : 1.0 / (1.0 + exp(-m[i][j]));
+	return res;
+}
+
+NeuroNet::Matrix NeuroNet::Layer::tanh_function(Matrix m)
+{
+	Matrix res(m.size(), m[0].size());
+	for (int i = 0; i < m.size(); ++i)
+		for (int j = 0; j < m[0].size(); ++j)
+			res[i][j] = (exp(2 * m[i][j]) - 1.0) / (exp(2 * m[i][j]) + 1.0);
+	return res;
+}
+
+NeuroNet::Matrix NeuroNet::Layer::diff_tanh_function(Matrix m)
+{
+	Matrix res(m.size(), m[0].size());
+	for (int i = 0; i < m.size(); ++i)
+		for (int j = 0; j < m[0].size(); ++j)
+			res[i][j] = 1.0 - m[i][j] * m[i][j];
+	return res;
+}
+
+NeuroNet::Matrix NeuroNet::Layer::diff_sigm_function(Matrix m)
+{
+	Matrix res(m.size(), m[0].size());
+	for (int i = 0; i < m.size(); ++i)
+		for (int j = 0; j < m[0].size(); ++j)
+			res[i][j] = (1.0 - m[i][j]) * m[i][j];
+	return res;
 }
 
 NeuroNet::Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction)
 {
+	_aftype = activationFunction;
 	Weights.InitRandom(prevNeuronCount, neuronCount);
 	Correct.Init(prevNeuronCount, neuronCount);
-	_layer.resize(neuronCount, Neuron(activationFunction));
+	States.Init(neuronCount, 1);
+	Axons.Init(neuronCount, 1);
+	Delta.Init(neuronCount, 1);
 }
 
 void NeuroNet::Layer::CalculateStates(Layer & prevLayer)
 {
-	for (int i = 0; i < this->Count(); ++i)
+	for (int i = 0; i < this->States.size(); ++i)
 	{
 		double newState = 0;
-		for (int j = 0; j < prevLayer.Count(); ++j)
-			newState += prevLayer[j].GetAxon() * this->Weights[j][i];
-		this->_layer[i].SetState(newState);
+		for (int j = 0; j < prevLayer.States.size(); ++j)
+			States[i][0] += prevLayer.Axons[j][0] * this->Weights[j][i];
 	}
 }
 
 void NeuroNet::Layer::CalculateAxons()
 {
-	for (int i = 0; i < this->Count(); ++i)
-		_layer[i].CalculateAxon();
+	switch (_aftype)
+	{
+	case SIGM:
+		Axons = sigm_function(States);
+		break;
+	case LINE:
+		Axons = States;
+		break;
+	case TANH:
+		Axons = tanh_function(States);
+		break;
+	default:
+		break;
+	}
 }
 
-const int NeuroNet::Layer::Count()
+NeuroNet::Matrix NeuroNet::Layer::GetDiff()
 {
-	return _layer.size();
+	switch (_aftype)
+	{
+	case SIGM:
+		return diff_sigm_function(Axons);
+	case LINE:
+		return Axons;
+	case TANH:
+		return diff_tanh_function(Axons);
+	default:
+		break;
+	}
 }
 
-NeuroNet::Neuron& NeuroNet::Layer::operator[](int n)
+double NeuroNet::Layer::GetDiff(double val)
 {
-	return _layer[n];
+	switch (_aftype)
+	{
+	case SIGM:
+		return (1.0 - val) * val;
+	case LINE:
+		return val;
+	case TANH:
+		return 1.0 - val * val;
+	default:
+		break;
+	}
 }
+
+
+double operator* (const std::vector<double> &lhs, const std::vector<double> &rhs)
+{
+	double res = 0.0;
+	for (int i = 0; i < lhs.size(); ++i)
+	{
+		res += lhs[i] * rhs[i];
+	}
+	return res;
+}
+
+

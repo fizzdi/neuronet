@@ -2,7 +2,7 @@
 using namespace std;
 const int num_check = 10;
 const int HiddenNeuron = 40; //sin - 30
-const int SampleCount = 10;
+const int SampleCount = 3;
 const int Epoh = 5000;
 #define TESTFUNC sin
 int main()
@@ -24,7 +24,7 @@ int main()
 		double y = TESTFUNC(x);
 		net.TrainingSet.push_back(NeuroNet::Problem({ x }, { y }));
 	}
-	net.RunTrainingSet();
+	net.RunTrainingSet(1);
 	double lstError = 0.0;
 	double maxError = 0.0;
 	for (int i = 0; i < Epoh; ++i)
@@ -32,7 +32,7 @@ int main()
 		lstError = maxError;
 		net.CorrectWeights();
 		//cout << endl << endl << "CORRECT" << endl << endl;
-		maxError = net.RunTrainingSet();
+		maxError = net.RunTrainingSet(1);
 		cout << i << ") " << maxError << endl;
 		if (maxError < 0.000001 || abs(maxError - lstError) < 0.00000001)
 		{
@@ -48,7 +48,9 @@ int main()
 	{
 		inputs[0] = rand()*1.0 / RAND_MAX;
 		double ideal = TESTFUNC(inputs[0]);
-		outputs = net.Run(inputs);
+		NeuroNet::Matrix inpm;
+		inpm.operator=(inputs);
+		outputs = net.Run(inpm);
 		double curerror = abs(outputs[0] - ideal);
 		error += curerror;
 		cout << inputs[0] << " " << outputs[0] << " (" << ideal << ") error: " << curerror << endl;

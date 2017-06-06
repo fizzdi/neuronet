@@ -4,18 +4,27 @@
 #include <vector>
 namespace NeuroNet
 {
+	//activation function type
+	enum AFType { LINE, SIGM, TANH };
+
 	class Layer
 	{
 	private:
-		std::vector<NeuroNet::Neuron> _layer;
+		AFType _aftype;
+
+		Matrix sigm_function(Matrix m);
+		Matrix tanh_function(Matrix m);
+		Matrix diff_tanh_function(Matrix m);
+		Matrix diff_sigm_function(Matrix m);
 	public:
-		Layer(int neuronCount, int prevNeuronCount);
+		NeuroNet::Matrix Axons;
+		NeuroNet::Matrix States;
+		NeuroNet::Matrix Delta;
 		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction);
 		void CalculateStates(Layer &prevLayer);
 		void CalculateAxons();
-		const int Count();
-		NeuroNet::Neuron& operator[] (int n);
-
+		Matrix GetDiff();
+		double GetDiff(double val);
 		Matrix Weights;
 		Matrix Correct;
 		Matrix OldCorrect;

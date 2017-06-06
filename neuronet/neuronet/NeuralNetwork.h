@@ -10,7 +10,7 @@ namespace NeuroNet
 {
 	struct Problem
 	{
-		std::vector<double> inputs, outputs;
+		Matrix inputs, outputs;
 		Problem(std::vector<double> input, std::vector<double> output)
 		{
 			inputs = input;
@@ -27,11 +27,11 @@ namespace NeuroNet
 		double RunTrainingSet(bool print = false);
 		std::vector<Problem> TrainingSet;
 		friend std::ostream& operator<< (std::ostream &os, NeuralNetwork &net);
-		void PrintProblemResult(const Problem& test);
-		double CalculateError(const Problem& test, bool print = false);
+		void PrintProblemResult(Problem& test);
+		double CalculateError(Problem& test, bool print = false);
 		void CorrectWeights();
-		void CalcCorrectWeights(const Problem& test); 
+		void CalcCorrectWeights(Problem& test);
 
-		std::vector<double> Run(std::vector<double> &inputs);
+		std::vector<double> Run(Matrix &inputs);
 	};
 }
