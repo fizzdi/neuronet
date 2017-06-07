@@ -46,7 +46,6 @@ int main()
 	}
 
 	vector<double> inputs(1);
-	vector<double> outputs;
 	{
 		double error = 0.0;
 		double max_error = 0.0;
@@ -56,10 +55,10 @@ int main()
 			double ideal = TESTFUNC(inputs[0]);
 			NeuroNet::Matrix2d inpm;
 			inpm.operator=(inputs);
-			outputs = net.Run(inpm);
-			double curerror = abs(outputs[0] - ideal);
+			auto outputs = net.Run(inpm);
+			double curerror = abs(outputs[0][0] - ideal);
 			error += curerror;
-			cout << inputs[0] << " " << outputs[0] << " (" << ideal << ") error: " << curerror << endl;
+			cout << inputs[0] << " " << outputs[0][0] << " (" << ideal << ") error: " << curerror << endl;
 			max_error = max(max_error, curerror);
 		}
 		cout << endl << "Sum Error: " << error << endl;

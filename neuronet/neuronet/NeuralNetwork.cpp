@@ -94,7 +94,7 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 	}
 }
 
-std::vector<double> NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
+NeuroNet::Matrix2d NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
 {
 	//init input layer
 	std::copy(
@@ -110,12 +110,7 @@ std::vector<double> NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
 		_layers[i].CalculateStates(_layers[i - 1]);
 		_layers[i].CalculateAxons();
 	}
-	std::vector<double> ans;
-	for (int i = 0; i < _layers.back().Axons.GetVerticalSize(); ++i)
-	{
-		ans.push_back(_layers.back().Axons[i][0]);
-	}
-	return ans;
+	return _layers.back().Axons;
 }
 
 std::ostream & NeuroNet::operator<<(std::ostream & os, NeuralNetwork & net)

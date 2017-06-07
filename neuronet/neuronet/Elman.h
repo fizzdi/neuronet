@@ -8,7 +8,7 @@ namespace NeuroNet
 	public:
 		void Init(int InputCount, int OutputCount, int HiddenNeuronCount, AFType HiddenLayerFunction);
 		double RunTrainingSet(bool print = false);
-		std::vector<double> Run(Matrix2d &inputs);
+		Matrix2d Run(Matrix2d &inputs);
 	};
 
 
