@@ -1,6 +1,6 @@
 #pragma once
 #include "Neuron.h"
-#include "Matrix.h"
+#include "Matrix2d.h"
 #include <vector>
 namespace NeuroNet
 {
@@ -12,20 +12,20 @@ namespace NeuroNet
 	private:
 		AFType _aftype;
 
-		Matrix sigm_function(Matrix m);
-		Matrix tanh_function(Matrix m);
-		Matrix diff_tanh_function(Matrix m);
-		Matrix diff_sigm_function(Matrix m);
+		Matrix2d sigm_function(Matrix2d m);
+		Matrix2d tanh_function(Matrix2d m);
+		Matrix2d diff_tanh_function(Matrix2d m);
+		Matrix2d diff_sigm_function(Matrix2d m);
 	public:
-		NeuroNet::Matrix Axons;
-		NeuroNet::Matrix States;
-		NeuroNet::Matrix Delta;
+		NeuroNet::Matrix2d Axons;
+		NeuroNet::Matrix2d States;
+		NeuroNet::Matrix2d Delta;
 		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction);
 		void CalculateStates(Layer &prevLayer);
 		void CalculateAxons();
-		Matrix GetDiff();
+		Matrix2d GetDiff();
 		double GetDiff(double val);
-		Matrix Weights;
-		Matrix Correct;
+		Matrix2d Weights;
+		Matrix2d Correct;
 	};
 }

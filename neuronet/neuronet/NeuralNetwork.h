@@ -9,7 +9,7 @@ namespace NeuroNet
 {
 	struct Problem
 	{
-		Matrix inputs, outputs;
+		Matrix2d inputs, outputs;
 		Problem(std::vector<double> input, std::vector<double> output)
 		{
 			inputs = input;
@@ -22,7 +22,7 @@ namespace NeuroNet
 	protected:
 		std::vector<Layer> _layers;
 	public:
-		void Init(int InputCount, int OutputCount, int NeuronCount);
+		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
 		double RunTrainingSet(bool print = false);
 		std::vector<Problem> TrainingSet;
 		friend std::ostream& operator<< (std::ostream &os, NeuralNetwork &net);
@@ -31,6 +31,6 @@ namespace NeuroNet
 		void CorrectWeights();
 		void CalcCorrectWeights(Problem& test);
 
-		std::vector<double> Run(Matrix &inputs);
+		std::vector<double> Run(Matrix2d &inputs);
 	};
 }

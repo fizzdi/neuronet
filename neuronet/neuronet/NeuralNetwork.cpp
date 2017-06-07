@@ -2,11 +2,11 @@
 #include <iostream>
 #include <algorithm>
 
-void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCount)
+void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
 {
 	_layers.clear();
 	_layers.push_back(Layer(InputCount, 0, LINE));
-	_layers.push_back(Layer(NeuronCount, InputCount, SIGM));
+	_layers.push_back(Layer(NeuronCount, InputCount, HiddenLayerFunction));
 	_layers.push_back(Layer(OutputCount, NeuronCount, LINE));
 }
 
@@ -46,7 +46,7 @@ void NeuroNet::NeuralNetwork::PrintProblemResult(Problem & test)
 {
 	std::cout << *this;
 	std::cout << "Expected results:" << std::endl;
-	for (int i = 0; i < test.outputs.size(); ++i)
+	for (int i = 0; i < test.outputs.GetVerticalSize(); ++i)
 		std::cout << "\toutput[" << i << "] = " << test.outputs[i][0] << std::endl;
 }
 
@@ -83,9 +83,9 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 
 	for (int i = 1; i < countLayers; ++i)
 	{
-		for (int j = 0; j < _layers[i].Axons.size(); ++j)
+		for (int j = 0; j < _layers[i].Axons.GetVerticalSize(); ++j)
 		{
-			for (int k = 0; k < _layers[i - 1].Axons.size(); ++k)
+			for (int k = 0; k < _layers[i - 1].Axons.GetVerticalSize(); ++k)
 			{
 				double grad = _layers[i].Delta[j][0] * _layers[i - 1].Axons[k][0];
 				_layers[i].Correct[k][j] += EducationalSpeed * grad;
@@ -94,10 +94,14 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 	}
 }
 
-std::vector<double> NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix& inputs)
+std::vector<double> NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
 {
 	//init input layer
-	_layers[0].States = inputs;
+	std::copy(
+		inputs.rowbegin(),
+		inputs.rowend(),
+		_layers[0].States.rowbegin()
+	);
 	_layers[0].CalculateAxons();
 
 	//init hidden and output layers
@@ -107,7 +111,7 @@ std::vector<double> NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix& inputs)
 		_layers[i].CalculateAxons();
 	}
 	std::vector<double> ans;
-	for (int i = 0; i < _layers.back().Axons.size(); ++i)
+	for (int i = 0; i < _layers.back().Axons.GetVerticalSize(); ++i)
 	{
 		ans.push_back(_layers.back().Axons[i][0]);
 	}
@@ -117,11 +121,11 @@ std::vector<double> NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix& inputs)
 std::ostream & NeuroNet::operator<<(std::ostream & os, NeuralNetwork & net)
 {
 	os << std::endl << "Input neurons:" << std::endl;
-	for (int i = 0; i < net._layers[0].Axons.size(); ++i)
+	for (int i = 0; i < net._layers[0].Axons.GetVerticalSize(); ++i)
 		os << "\tinput[" << i << "] = " << net._layers[0].Axons[i][0] << std::endl;
 
 	os << std::endl << "Output neurons:" << std::endl;
-	for (int i = 0; i < net._layers.back().Axons.size(); ++i)
+	for (int i = 0; i < net._layers.back().Axons.GetVerticalSize(); ++i)
 		os << "\toutput[" << i << "] = " << net._layers.back().Axons[i][0] << std::endl;
 	os << std::endl;
 	return os;

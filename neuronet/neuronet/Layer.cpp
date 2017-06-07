@@ -1,39 +1,42 @@
 #include "Layer.h"
 
-NeuroNet::Matrix NeuroNet::Layer::sigm_function(Matrix m)
+NeuroNet::Matrix2d NeuroNet::Layer::sigm_function(Matrix2d x)
 {
-	Matrix res(m.size(), m[0].size());
-	for (int i = 0; i < m.size(); ++i)
-		for (int j = 0; j < m[0].size(); ++j)
-			res[i][j] = m[i][j] <= -35 ? m[i][j] = 10e-15 : 1.0 / (1.0 + exp(-m[i][j]));
+	int n = x.GetVerticalSize(), m = x.GetHorizontalSize();
+	Matrix2d res(n,m);
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < m; ++j)
+			res[i][j] = x[i][j] <= -35 ? x[i][j] = 10e-15 : 1.0 / (1.0 + exp(-x[i][j]));
 	return res;
 }
 
-NeuroNet::Matrix NeuroNet::Layer::tanh_function(Matrix m)
+NeuroNet::Matrix2d NeuroNet::Layer::tanh_function(Matrix2d x)
 {
-	//TODO get vertical and horizontal sizes
-	Matrix res(m.size(), m[0].size());
-	for (int i = 0; i < m.size(); ++i)
-		for (int j = 0; j < m[0].size(); ++j)
-			res[i][j] = (exp(2 * m[i][j]) - 1.0) / (exp(2 * m[i][j]) + 1.0);
+	int n = x.GetVerticalSize(), m = x.GetHorizontalSize();
+	Matrix2d res(n, m);
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < m; ++j)
+			res[i][j] = (exp(2 *x[i][j]) - 1.0) / (exp(2 * x[i][j]) + 1.0);
 	return res;
 }
 
-NeuroNet::Matrix NeuroNet::Layer::diff_tanh_function(Matrix m)
+NeuroNet::Matrix2d NeuroNet::Layer::diff_tanh_function(Matrix2d x)
 {
-	Matrix res(m.size(), m[0].size());
-	for (int i = 0; i < m.size(); ++i)
-		for (int j = 0; j < m[0].size(); ++j)
-			res[i][j] = 1.0 - m[i][j] * m[i][j];
+	int n = x.GetVerticalSize(), m = x.GetHorizontalSize();
+	Matrix2d res(n, m);
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < m; ++j)
+			res[i][j] = 1.0 - x[i][j] * x[i][j];
 	return res;
 }
 
-NeuroNet::Matrix NeuroNet::Layer::diff_sigm_function(Matrix m)
+NeuroNet::Matrix2d NeuroNet::Layer::diff_sigm_function(Matrix2d x)
 {
-	Matrix res(m.size(), m[0].size());
-	for (int i = 0; i < m.size(); ++i)
-		for (int j = 0; j < m[0].size(); ++j)
-			res[i][j] = (1.0 - m[i][j]) * m[i][j];
+	int n = x.GetVerticalSize(), m = x.GetHorizontalSize();
+	Matrix2d res(n, m);
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < m; ++j)
+			res[i][j] = (1.0 - x[i][j]) * x[i][j];
 	return res;
 }
 
@@ -71,7 +74,7 @@ void NeuroNet::Layer::CalculateAxons()
 	}
 }
 
-NeuroNet::Matrix NeuroNet::Layer::GetDiff()
+NeuroNet::Matrix2d NeuroNet::Layer::GetDiff()
 {
 	switch (_aftype)
 	{
