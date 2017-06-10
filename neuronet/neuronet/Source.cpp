@@ -4,7 +4,7 @@
 #include <ctime>
 using namespace std;
 const int num_check = 30;
-const int HiddenNeuron =6; //sin - 30
+const int HiddenNeuron =20; //sin - 30
 const int SampleCount = 20;
 const int Epoh = 10000;
 #define TESTFUNC sin

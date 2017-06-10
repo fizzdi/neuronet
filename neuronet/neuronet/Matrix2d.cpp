@@ -59,6 +59,18 @@ NeuroNet::Matrix2d NeuroNet::Matrix2d::operator*(const Matrix2d & rhs)
 	return res;
 }
 
+NeuroNet::Matrix2d NeuroNet::Matrix2d::operator*(const double & rhs)
+{
+	int n = GetVerticalSize();
+	int m = GetHorizontalSize();
+	Matrix2d res(n, m);
+
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < m; ++j)
+				res._matrix[i][j] += _matrix[i][j] * rhs;
+	return res;
+}
+
 NeuroNet::Matrix2d NeuroNet::Matrix2d::operator+(const Matrix2d & rhs)
 {
 	int n = this->_matrix.size();

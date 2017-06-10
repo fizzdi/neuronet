@@ -20,6 +20,7 @@ namespace NeuroNet
 		NeuroNet::Matrix2d Axons;
 		NeuroNet::Matrix2d States;
 		NeuroNet::Matrix2d Delta;
+		NeuroNet::Matrix2d LastDelta;
 		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction);
 		void CalculateStates(Layer &prevLayer);
 		void CalculateAxons();

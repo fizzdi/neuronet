@@ -15,6 +15,7 @@ namespace NeuroNet
 		int GetVerticalSize() const;
 		void Clear();
 		Matrix2d operator* (const Matrix2d &rhs);
+		Matrix2d operator* (const double &rhs);
 		Matrix2d operator+ (const Matrix2d &rhs);
 		Matrix2d operator- (const Matrix2d &rhs);
 		Matrix2d operator+= (const Matrix2d &rhs);
