@@ -19,7 +19,7 @@ int main()
 	{
 		double x = rand()*1.0 / RAND_MAX;
 		double y = TESTFUNC(x);
-		net.TrainingSet.push_back(NeuroNet::Problem({ x }, { y }));
+		net.TrainingSet.push_back(NeuroNet::Problem({ x }, { y}));
 	}
 	net.RunTrainingSet();
 	double lstError = 0.0;

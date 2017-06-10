@@ -45,16 +45,16 @@ NeuroNet::Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFu
 	_aftype = activationFunction;
 	Weights.InitRandom(neuronCount, prevNeuronCount);
 	Correct.Init(neuronCount, prevNeuronCount);
-	States.Init(neuronCount, 1);
-	Axons.Init(neuronCount, 1);
-	Delta.Init(neuronCount, 1);
-	LastDelta.Init(neuronCount, 1);
+	States.Init(1, neuronCount);
+	Axons.Init(1, neuronCount);
+	Delta.Init(1, neuronCount);
+	LastDelta.Init(1, neuronCount);
 }
 
 //TODO add const operation
 void NeuroNet::Layer::CalculateStates(Layer & prevLayer)
 {
-	States = Weights * prevLayer.Axons;
+	States =  prevLayer.Axons * !Weights;
 }
 
 void NeuroNet::Layer::CalculateAxons()
