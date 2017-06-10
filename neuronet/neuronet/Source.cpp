@@ -12,7 +12,7 @@ int main()
 {
 	std::ios::sync_with_stdio(false);
 	NeuroNet::NeuralNetwork net;
-	srand(time(NULL));
+	srand(1);	//srand(time(NULL));
 
 	net.Init(1, 1, HiddenNeuron, NeuroNet::TANH);
 	for (int i = 0; i < SampleCount; ++i)
