@@ -12,12 +12,6 @@ int main()
 	std::ios::sync_with_stdio(false);
 	NeuroNet::Elman net;
 	srand(time(NULL));
-	/*net.Init(2, 1, 2);
-	net.TrainingSet.push_back(NeuroNet::Problem({ 1,1 }, { 0 }));
-	net.TrainingSet.push_back(NeuroNet::Problem({ 0,0 }, { 0 }));
-	net.TrainingSet.push_back(NeuroNet::Problem({ 0,1 }, { 1 }));
-	net.TrainingSet.push_back(NeuroNet::Problem({ 1,0 }, { 1 }));
-	*/
 
 	net.Init(1, 1, HiddenNeuron);
 	for (int i = 0; i < SampleCount; ++i)
