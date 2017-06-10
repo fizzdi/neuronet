@@ -4,21 +4,27 @@
 #include <ctime>
 using namespace std;
 const int num_check = 30;
-const int HiddenNeuron =30; //sin - 30
+const int HiddenNeuron = 150; //sin - 30
 const int SampleCount = 30;
-const int Epoh = 1000000;
-#define TESTFUNC sin
+const int Epoh = 100000;
+
+double test_fun(double x)
+{
+	return x*x;
+}
+
 int main()
 {
 	std::ios::sync_with_stdio(false);
 	NeuroNet::NeuralNetwork net;
-	srand(1);	//srand(time(NULL));
+	//srand(1);	
+	srand(time(NULL));
 
 	net.Init(1, 1, HiddenNeuron, NeuroNet::TANH);
 	for (int i = 0; i < SampleCount; ++i)
 	{
 		double x = rand()*1.0 / RAND_MAX;
-		double y = TESTFUNC(x);
+		double y = test_fun(x);
 		net.TrainingSet.push_back(NeuroNet::Problem({ x }, { y}));
 	}
 	net.RunTrainingSet();
@@ -46,7 +52,7 @@ int main()
 		for (int i = 0; i < num_check; ++i)
 		{
 			inputs[0] = rand()*1.0 / RAND_MAX;
-			double ideal = TESTFUNC(inputs[0]);
+			double ideal = test_fun(inputs[0]);
 			NeuroNet::Matrix2d inpm;
 			inpm.operator=(inputs);
 			auto outputs = net.Run(inpm);
