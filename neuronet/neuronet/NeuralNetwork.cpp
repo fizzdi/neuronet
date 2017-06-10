@@ -79,7 +79,7 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 	_layers.back().Delta = (test.outputs - _layers.back().Axons).multiplication(_layers.back().GetDiff());
 
 	for (int i = countLayers - 2; i >= 0; --i)
-		_layers[i].Delta = (_layers[i + 1].Weights* _layers[i + 1].Delta).multiplication(_layers[i].GetDiff());
+		_layers[i].Delta = (!_layers[i + 1].Weights * _layers[i + 1].Delta).multiplication(_layers[i].GetDiff());
 
 	for (int i = 1; i < countLayers; ++i)
 	{
@@ -88,7 +88,7 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 			for (int k = 0; k < _layers[i - 1].Axons.GetVerticalSize(); ++k)
 			{
 				double grad = _layers[i].Delta[j][0] * _layers[i - 1].Axons[k][0];
-				_layers[i].Correct[k][j] += EducationalSpeed * grad;
+				_layers[i].Correct[j][k] += EducationalSpeed * grad;
 			}
 		}
 	}

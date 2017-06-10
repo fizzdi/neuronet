@@ -43,8 +43,8 @@ NeuroNet::Matrix2d NeuroNet::Layer::diff_sigm_function(Matrix2d x)
 NeuroNet::Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction)
 {
 	_aftype = activationFunction;
-	Weights.InitRandom(prevNeuronCount, neuronCount);
-	Correct.Init(prevNeuronCount, neuronCount);
+	Weights.InitRandom(neuronCount, prevNeuronCount);
+	Correct.Init(neuronCount, prevNeuronCount);
 	States.Init(neuronCount, 1);
 	Axons.Init(neuronCount, 1);
 	Delta.Init(neuronCount, 1);
@@ -54,7 +54,7 @@ NeuroNet::Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFu
 //TODO add const operation
 void NeuroNet::Layer::CalculateStates(Layer & prevLayer)
 {
-	States = !(!prevLayer.Axons * Weights);
+	States = Weights * prevLayer.Axons;
 }
 
 void NeuroNet::Layer::CalculateAxons()
