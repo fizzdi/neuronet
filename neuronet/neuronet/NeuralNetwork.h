@@ -3,7 +3,6 @@
 #include "Layer.h"
 #include <vector>
 #include <iostream>
-const double EducationalSpeed = 0.0001;
 
 namespace NeuroNet
 {

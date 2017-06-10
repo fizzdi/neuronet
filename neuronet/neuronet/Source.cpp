@@ -4,9 +4,9 @@
 #include <ctime>
 using namespace std;
 const int num_check = 30;
-const int HiddenNeuron =20; //sin - 30
-const int SampleCount = 20;
-const int Epoh = 10000;
+const int HiddenNeuron =30; //sin - 30
+const int SampleCount = 30;
+const int Epoh = 1000000;
 #define TESTFUNC sin
 int main()
 {
@@ -32,7 +32,7 @@ int main()
 		maxError = net.RunTrainingSet();
 		if (i % 1000 == 0)
 			cout << i << ") " << maxError << endl;
-		if (maxError < 0.000001 || abs(maxError - lstError) < 0.00000001)
+		if (maxError < 1e-6 || abs(maxError - lstError) < 1e-10)
 		{
 			cout << i << endl;
 			break;

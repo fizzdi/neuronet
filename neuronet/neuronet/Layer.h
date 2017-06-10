@@ -17,10 +17,11 @@ namespace NeuroNet
 		Matrix2d diff_tanh_function(Matrix2d m);
 		Matrix2d diff_sigm_function(Matrix2d m);
 	public:
-		NeuroNet::Matrix2d Axons;
-		NeuroNet::Matrix2d States;
-		NeuroNet::Matrix2d Delta;
-		NeuroNet::Matrix2d LastDelta;
+		Matrix2d Axons;
+		Matrix2d States;
+		Matrix2d Delta;
+		Matrix2d LastGrad;
+		Matrix2d CorrectVal;
 		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction);
 		void CalculateStates(Layer &prevLayer);
 		void CalculateAxons();

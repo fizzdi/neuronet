@@ -3,16 +3,15 @@
 #include <algorithm>
 
 
-NeuroNet::Matrix2d::Matrix2d(int n, int m)
+NeuroNet::Matrix2d::Matrix2d(int n, int m, double val)
 {
-	_matrix.resize(0);
-	_matrix.resize(n, std::vector<double>(m, 0.0));
+	Init(n, m, val);
 }
 
-void NeuroNet::Matrix2d::Init(int n, int m)
+void NeuroNet::Matrix2d::Init(int n, int m, double val)
 {
 	_matrix.resize(0);
-	_matrix.resize(n, std::vector<double>(m,0.0));
+	_matrix.resize(n, std::vector<double>(m, val));
 }
 
 void NeuroNet::Matrix2d::InitRandom(int n, int m)

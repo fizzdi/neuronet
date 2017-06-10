@@ -24,7 +24,7 @@ double NeuroNet::NeuralNetwork::RunTrainingSet(bool print)
 			test.inputs.rowbegin(),
 			test.inputs.rowend(),
 			_layers[0].States.rowbegin()
-		);
+			);
 		_layers[0].CalculateAxons();
 
 		//init hidden and output layers
@@ -82,7 +82,28 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 		_layers[i].Delta = (_layers[i + 1].Delta * _layers[i + 1].Weights).multiplication(_layers[i].GetDiff());
 
 	for (int i = 1; i < countLayers; ++i)
-		_layers[i].Correct += !_layers[i].Delta * _layers[i - 1].Axons * EducationalSpeed;
+	{
+		//_layers[i].Grad = !_layers[i].Delta * _layers[i - 1].Axons;
+		Matrix2d Grad = !_layers[i].Delta * _layers[i - 1].Axons;
+		for (int j = 0; j < Grad.GetVerticalSize(); ++j)
+		{
+			for (int k = 0; k < Grad.GetHorizontalSize(); ++k)
+			{
+				double cur_correct = 0.0;
+				double cur_mult = Grad[j][k] * _layers[i].LastGrad[j][k];
+				if (cur_mult >= 0.0)
+					cur_correct = 0.5 * _layers[i].CorrectVal[j][k];
+				else if (cur_mult < 0.0)
+					cur_correct = 1.2 * _layers[i].CorrectVal[j][k];
+
+				cur_correct = std::max(cur_correct, 50.0);
+				cur_correct = std::min(cur_correct, 1e-6);
+				_layers[i].Correct[j][k] += Grad[j][k] > 0 ? cur_correct : -cur_correct;
+			}
+		}
+		_layers[i].LastGrad = Grad;
+		_layers[i].CorrectVal = _layers[i].Correct;
+	}
 }
 
 NeuroNet::Matrix2d NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
@@ -92,7 +113,7 @@ NeuroNet::Matrix2d NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
 		inputs.rowbegin(),
 		inputs.rowend(),
 		_layers[0].States.rowbegin()
-	);
+		);
 	_layers[0].CalculateAxons();
 
 	//init hidden and output layers
