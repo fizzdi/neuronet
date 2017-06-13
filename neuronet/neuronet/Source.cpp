@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <ctime>
 using namespace std;
-const int num_check = 30;
+const int num_check = 10;
 const int HiddenNeuron = 2; //sin - 30
 const int SampleCount = 10;
-const int Epoh = 200;
+const int Epoh = 100000;
 
 double test_fun(double x)
 {
@@ -36,15 +36,17 @@ int main()
 		//net.CorrectWeights();
 		//cout << endl << endl << "CORRECT" << endl << endl;
 		maxError = net.RunTrainingSet();
-		//if (i % 10 == 0)
-		cout << i << ") " << maxError << endl;
+		if (i % 1000 == 0)
+		cout << i << ") " << maxError << " (" << abs(maxError - lstError) << ")" << endl;
 		cout.flush();
-		if (maxError < 1e-6 || abs(maxError - lstError) < 1e-10)
+		if (maxError < 1e-4 || abs(maxError - lstError) < 1e-8 || maxError > 1e6)
 		{
-			cout << i << endl;
+			cout << "STOP " <<  i << ") " << maxError <<  " (" << abs(maxError - lstError) << ")" << endl;
 			break;
 		}
 	}
+
+	cout << endl << "------------------------------------------" << endl;
 
 	vector<double> inputs(1);
 	{

@@ -94,20 +94,26 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 			{
 				double cur_correct = 0.0;
 				double cur_mult = Grad[j][k] * _layers[i].LastGrad[j][k];
-				if (cur_mult > 0.0)
+				if (cur_mult >= 0.0)
 					cur_correct = 1.2 * _layers[i].CorrectVal[j][k];
 				else if (cur_mult < 0.0)
 					cur_correct = 0.5 * _layers[i].CorrectVal[j][k];
 
-				cur_correct = (cur_correct < 0.0 ? -1.0 : 1.0) * std::min(abs(cur_correct), 50.0);
-				cur_correct = (cur_correct < 0.0 ? -1.0 : 1.0) * std::max(abs(cur_correct), 1e-6);
-				_layers[i].Correct[j][k] = (1-2*(Grad[j][k] < 0)) * cur_correct;
+				cur_correct = std::min(cur_correct, 50.0);
+				cur_correct = std::max(cur_correct, 1e-6);
+				_layers[i].CorrectVal[j][k] = cur_correct;
+
+				if (Grad[j][k] == 0)
+					_layers[i].Correct[j][k] = 0.0;
+				else if (Grad[j][k] > 0)
+					_layers[i].Weights[j][k] += -cur_correct;
+				else if (Grad[j][k] < 0)
+					_layers[i].Weights[j][k] += cur_correct;
 				int y = 0;
 			}
 		}
 		_layers[i].LastGrad = Grad;
-		_layers[i].CorrectVal = _layers[i].Correct;
-		_layers[i].Weights += _layers[i].Correct;
+		//_layers[i].Weights += _layers[i].Correct;
 		//_layers[i].Correct.Clear();
 	}
 }
