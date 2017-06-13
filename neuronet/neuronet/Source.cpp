@@ -4,13 +4,13 @@
 #include <ctime>
 using namespace std;
 const int num_check = 30;
-const int HiddenNeuron = 150; //sin - 30
-const int SampleCount = 30;
-const int Epoh = 100000;
+const int HiddenNeuron = 2; //sin - 30
+const int SampleCount = 10;
+const int Epoh = 200;
 
 double test_fun(double x)
 {
-	return x*x;
+	return sin(x);
 }
 
 int main()
@@ -23,21 +23,22 @@ int main()
 	net.Init(1, 1, HiddenNeuron, NeuroNet::TANH);
 	for (int i = 0; i < SampleCount; ++i)
 	{
-		double x = rand()*1.0 / RAND_MAX;
+		double x = -1.0+(rand()*1.0 / (RAND_MAX/2));
 		double y = test_fun(x);
-		net.TrainingSet.push_back(NeuroNet::Problem({ x }, { y}));
+		net.TrainingSet.push_back(NeuroNet::Problem({ x }, { y }));
 	}
-	net.RunTrainingSet();
+	cout << "0) " << net.RunTrainingSet() << endl;
 	double lstError = 0.0;
 	double maxError = 0.0;
-	for (int i = 0; i < Epoh; ++i)
+	for (int i = 1; i <= Epoh; ++i)
 	{
 		lstError = maxError;
-		net.CorrectWeights();
+		//net.CorrectWeights();
 		//cout << endl << endl << "CORRECT" << endl << endl;
 		maxError = net.RunTrainingSet();
-		if (i % 1000 == 0)
-			cout << i << ") " << maxError << endl;
+		//if (i % 10 == 0)
+		cout << i << ") " << maxError << endl;
+		cout.flush();
 		if (maxError < 1e-6 || abs(maxError - lstError) < 1e-10)
 		{
 			cout << i << endl;
@@ -51,7 +52,7 @@ int main()
 		double max_error = 0.0;
 		for (int i = 0; i < num_check; ++i)
 		{
-			inputs[0] = rand()*1.0 / RAND_MAX;
+			inputs[0] = -1.0 + (rand()*1.0 / (RAND_MAX / 2));
 			double ideal = test_fun(inputs[0]);
 			NeuroNet::Matrix2d inpm;
 			inpm.operator=(inputs);
