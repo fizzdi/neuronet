@@ -5,8 +5,10 @@ void NeuroNet::Elman::Init(int InputCount, int OutputCount, int HiddenNeuronCoun
 {
 	_layers.clear();
 	_layers.push_back(Layer(InputCount + HiddenNeuronCount, 0, LINE));
+	for (int i = InputCount; i < _layers[0].States.GetHorizontalSize(); ++i)
+		_layers[0].States[0][i] = 0.5;
 	_layers.push_back(Layer(HiddenNeuronCount, InputCount + HiddenNeuronCount, HiddenLayerFunction));
-	_layers.push_back(Layer(OutputCount, HiddenNeuronCount, LINE));
+	_layers.push_back(Layer(OutputCount, HiddenNeuronCount, SIGM));
 }
 
 double NeuroNet::Elman::RunTrainingSet(bool print)
@@ -18,11 +20,8 @@ double NeuroNet::Elman::RunTrainingSet(bool print)
 	for each (Problem test in TrainingSet)
 	{
 		//init input layer
-		std::copy(
-			test.inputs.rowbegin(),
-			test.inputs.rowend(),
-			_layers[0].States.rowbegin()
-		);
+		for (int i = 0; i < test.inputs.GetHorizontalSize(); ++i)
+			_layers[0].Axons[0][i] = test.inputs[0][i];
 		_layers[0].CalculateAxons();
 
 		//init hidden and output layers
@@ -33,11 +32,8 @@ double NeuroNet::Elman::RunTrainingSet(bool print)
 		}
 
 		//copy last hiddent layer in input layer
-		std::copy(
-			_layers[_layers.size() - 2].Axons.rowbegin(),
-			_layers[_layers.size() - 2].Axons.rowend(),
-			_layers[0].States.rowbegin() + (_layers[0].States.GetVerticalSize() - _layers[_layers.size() - 2].States.GetVerticalSize())
-		);
+		for (int i = 0; i < _layers[_layers.size() - 2].Axons.GetHorizontalSize(); ++i)
+			_layers[0].States[0][_layers[0].States.GetHorizontalSize() - i - 1] = _layers[_layers.size() - 2].Axons[0][_layers[_layers.size() - 2].Axons.GetHorizontalSize() - i - 1];
 
 		if (print)
 			PrintProblemResult(test);
@@ -51,11 +47,8 @@ double NeuroNet::Elman::RunTrainingSet(bool print)
 NeuroNet::Matrix2d NeuroNet::Elman::Run(Matrix2d & inputs)
 {
 	//init input layer
-	std::copy(
-		inputs.rowbegin(),
-		inputs.rowend(),
-		_layers[0].States.rowbegin()
-	);
+	for (int i = 0; i < inputs.GetHorizontalSize(); ++i)
+		_layers[0].Axons[0][i] = inputs[0][i];
 	_layers[0].CalculateAxons();
 
 	//init hidden and output layers
@@ -64,5 +57,10 @@ NeuroNet::Matrix2d NeuroNet::Elman::Run(Matrix2d & inputs)
 		_layers[i].CalculateStates(_layers[i - 1]);
 		_layers[i].CalculateAxons();
 	}
+
+	//copy last hiddent layer in input layer
+	for (int i = 0; i < _layers[_layers.size() - 2].Axons.GetHorizontalSize(); ++i)
+		_layers[0].States[0][_layers[0].States.GetHorizontalSize() - i - 1] = _layers[_layers.size() - 2].Axons[0][_layers[_layers.size() - 2].Axons.GetHorizontalSize() - i - 1];
+
 	return _layers.back().Axons;
 }

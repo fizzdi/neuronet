@@ -46,8 +46,9 @@ void NeuroNet::NeuralNetwork::PrintProblemResult(Problem & test)
 {
 	std::cout << *this;
 	std::cout << "Expected results:" << std::endl;
-	for (int i = 0; i < test.outputs.GetVerticalSize(); ++i)
-		std::cout << "\toutput[" << i << "] = " << test.outputs[i][0] << std::endl;
+	for (int i = 0; i < test.outputs.GetHorizontalSize(); ++i)
+		std::cout << test.outputs[0][i] << " ";
+	std::cout << std::endl;
 }
 
 double NeuroNet::NeuralNetwork::CalculateError(Problem & test, bool print)
@@ -75,7 +76,7 @@ void NeuroNet::NeuralNetwork::CorrectWeights()
 
 void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 {
-	//PROP
+	//RPROP
 	int countLayers = _layers.size();
 
 	//calc delta
@@ -87,6 +88,7 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 	for (int i = 1; i < countLayers; ++i)
 	{
 		//_layers[i].Grad = !_layers[i].Delta * _layers[i - 1].Axons;
+		//TODO STL
 		Matrix2d Grad = !_layers[i].Delta * _layers[i - 1].Axons;
 		for (int j = 0; j < Grad.GetVerticalSize(); ++j)
 		{
@@ -140,12 +142,20 @@ NeuroNet::Matrix2d NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
 std::ostream & NeuroNet::operator<<(std::ostream & os, NeuralNetwork & net)
 {
 	os << std::endl << "Input neurons:" << std::endl;
-	for (int i = 0; i < net._layers[0].Axons.GetVerticalSize(); ++i)
-		os << "\tinput[" << i << "] = " << net._layers[0].Axons[i][0] << std::endl;
+	for (int i = 0; i < net._layers[0].Axons.GetHorizontalSize(); ++i)
+		os << net._layers[0].Axons[0][i] << " ";
+	os << std::endl;
+
+	os << std::endl << "Hidden axons:" << std::endl;
+	for (int i = 0; i < net._layers[1].Axons.GetHorizontalSize(); ++i)
+		os << net._layers[1].Axons[0][i] << " ";
+	os << std::endl;
 
 	os << std::endl << "Output neurons:" << std::endl;
-	for (int i = 0; i < net._layers.back().Axons.GetVerticalSize(); ++i)
-		os << "\toutput[" << i << "] = " << net._layers.back().Axons[i][0] << std::endl;
+	for (int i = 0; i < net._layers.back().Axons.GetHorizontalSize(); ++i)
+		os << net._layers.back().Axons[0][i] << " ";
+	os << std::endl;
+
 	os << std::endl;
 	return os;
 }
