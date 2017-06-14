@@ -146,7 +146,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Elman.cpp" />
     <ClCompile Include="Layer.cpp" />
     <ClCompile Include="Matrix2d.cpp" />
     <ClCompile Include="NeuralNetwork.cpp" />
@@ -154,7 +153,6 @@
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Elman.h" />
     <ClInclude Include="Layer.h" />
     <ClInclude Include="Matrix2d.h" />
     <ClInclude Include="NeuralNetwork.h" />

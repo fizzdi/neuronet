@@ -48,8 +48,9 @@ int main()
 			inputs[0] = rand()*1.0 / RAND_MAX;
 			double ideal = TESTFUNC(inputs[0]);
 			NeuroNet::Matrix2d inpm;
-			inpm.operator=(inputs);
-			auto outputs = net.Run(inpm);
+			inpm = inputs;
+			net.Run(inpm);
+			auto outputs = net.GetOut();
 			double curerror = abs(outputs[0][0] - ideal);
 			error += curerror;
 			cout << inputs[0] << " " << outputs[0][0] << " (" << ideal << ") error: " << curerror << endl;

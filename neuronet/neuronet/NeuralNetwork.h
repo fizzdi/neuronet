@@ -31,6 +31,8 @@ namespace NeuroNet
 		void CorrectWeights();
 		void CalcCorrectWeights(Problem& test);
 
-		Matrix2d Run(Matrix2d &inputs);
+		void Run(Matrix2d &inputs);
+
+		Matrix2d GetOut() const;
 	};
 }

@@ -20,11 +20,7 @@ double NeuroNet::NeuralNetwork::RunTrainingSet(bool print)
 	for each (Problem test in TrainingSet)
 	{
 		//init input layer
-		std::copy(
-			test.inputs.rowbegin(),
-			test.inputs.rowend(),
-			_layers[0].States.rowbegin()
-		);
+		_layers[0].States = test.inputs;
 		_layers[0].CalculateAxons();
 
 		//init hidden and output layers
@@ -47,7 +43,7 @@ void NeuroNet::NeuralNetwork::PrintProblemResult(Problem & test)
 	std::cout << *this;
 	std::cout << "Expected results:" << std::endl;
 	for (int i = 0; i < test.outputs.GetVerticalSize(); ++i)
-		std::cout << "\toutput[" << i << "] = " << test.outputs[i][0] << std::endl;
+		std::cout << "\toutput[" << i << "] = " << test.outputs[0][i] << std::endl;
 }
 
 double NeuroNet::NeuralNetwork::CalculateError(Problem & test, bool print)
@@ -85,14 +81,10 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 		_layers[i].Correct += !_layers[i].Delta * _layers[i - 1].Axons * EducationalSpeed;
 }
 
-NeuroNet::Matrix2d NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
+void NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
 {
 	//init input layer
-	std::copy(
-		inputs.rowbegin(),
-		inputs.rowend(),
-		_layers[0].States.rowbegin()
-	);
+	_layers[0].States = inputs;
 	_layers[0].CalculateAxons();
 
 	//init hidden and output layers
@@ -101,6 +93,10 @@ NeuroNet::Matrix2d NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
 		_layers[i].CalculateStates(_layers[i - 1]);
 		_layers[i].CalculateAxons();
 	}
+}
+
+NeuroNet::Matrix2d NeuroNet::NeuralNetwork::GetOut() const
+{
 	return _layers.back().Axons;
 }
 
