@@ -9,10 +9,10 @@ NeuroNet::Matrix2d::Matrix2d(int n, int m)
 	_matrix.resize(n, std::vector<double>(m, 0.0));
 }
 
-void NeuroNet::Matrix2d::Init(int n, int m)
+void NeuroNet::Matrix2d::Init(int n, int m, double val)
 {
 	_matrix.resize(0);
-	_matrix.resize(n, std::vector<double>(m,0.0));
+	_matrix.resize(n, std::vector<double>(m,val));
 }
 
 void NeuroNet::Matrix2d::InitRandom(int n, int m)
@@ -22,7 +22,7 @@ void NeuroNet::Matrix2d::InitRandom(int n, int m)
 	{
 		for (int j = 0; j < m; ++j)
 		{
-			_matrix[i][j] = (rand())*1.0 / (RAND_MAX);
+			_matrix[i][j] = -1 + (rand())*2.0 / (RAND_MAX);
 		}
 	}
 }

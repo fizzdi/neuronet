@@ -2,12 +2,13 @@
 #include <iostream>
 #include <algorithm>
 
-void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
+void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction, LearningType Learn)
 {
 	_layers.clear();
 	_layers.push_back(Layer(InputCount, 0, LINE));
 	_layers.push_back(Layer(NeuronCount, InputCount, HiddenLayerFunction));
 	_layers.push_back(Layer(OutputCount, NeuronCount, LINE));
+	_learn = Learn;
 }
 
 //TODO global var debug
@@ -16,16 +17,7 @@ double NeuroNet::NeuralNetwork::RunTrainingSet(bool print)
 	double maxError = 0.0;
 	for each (Problem test in TrainingSet)
 	{
-		//init input layer
-		_layers[0].States = test.inputs;
-		_layers[0].CalculateAxons();
-
-		//init hidden and output layers
-		for (int i = 1; i < _layers.size(); ++i)
-		{
-			_layers[i].CalculateStates(_layers[i - 1]);
-			_layers[i].CalculateAxons();
-		}
+		Run(test.inputs);
 		if (print)
 			PrintProblemResult(test);
 		maxError = std::max(maxError, CalculateError(test, print));
@@ -39,8 +31,9 @@ void NeuroNet::NeuralNetwork::PrintProblemResult(Problem & test)
 {
 	std::cout << *this;
 	std::cout << "Expected results:" << std::endl;
-	for (int i = 0; i < test.outputs.GetVerticalSize(); ++i)
-		std::cout << "\toutput[" << i << "] = " << test.outputs[0][i] << std::endl;
+	for (int i = 0; i < test.outputs.GetHorizontalSize(); ++i)
+		std::cout << test.outputs[0][i] << " ";
+	std::cout << std::endl;
 }
 
 double NeuroNet::NeuralNetwork::CalculateError(Problem & test, bool print)
@@ -57,7 +50,61 @@ double NeuroNet::NeuralNetwork::CalculateError(Problem & test, bool print)
 
 void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 {
-	//PROP
+	switch (_learn)
+	{
+	case BACKPROP:
+		BackPropagation(test);
+		break;
+	case RPROP:
+		ResilientPropagation(test);
+		break;
+	default:
+		break;
+	}
+}
+
+void NeuroNet::NeuralNetwork::ResilientPropagation(Problem & test)
+{
+	int countLayers = _layers.size();
+
+	//calc delta
+	_layers.back().Delta = (test.outputs - _layers.back().Axons).multiplication(_layers.back().GetDiff());
+
+	for (int i = countLayers - 2; i >= 0; --i)
+		_layers[i].Delta = (_layers[i + 1].Delta * _layers[i + 1].Weights).multiplication(_layers[i].GetDiff());
+
+	for (int i = 1; i < countLayers; ++i)
+	{
+		//TODO STL
+		Matrix2d Grad = !_layers[i].Delta * _layers[i - 1].Axons;
+		for (int j = 0; j < Grad.GetVerticalSize(); ++j)
+		{
+			for (int k = 0; k < Grad.GetHorizontalSize(); ++k)
+			{
+				double cur_correct = 0.0;
+				double cur_mult = Grad[j][k] * _layers[i].LastGrad[j][k];
+				if (cur_mult >= 0.0)
+					cur_correct = 1.2 * _layers[i].CorrectVal[j][k];
+				else if (cur_mult < 0.0)
+					cur_correct = 0.5 * _layers[i].CorrectVal[j][k];
+
+				cur_correct = std::min(cur_correct, 50.0);
+				cur_correct = std::max(cur_correct, 1e-6);
+				_layers[i].CorrectVal[j][k] = cur_correct;
+
+				if (Grad[j][k] > 0)
+					_layers[i].Weights[j][k] += -cur_correct;
+				else if (Grad[j][k] < 0)
+					_layers[i].Weights[j][k] += cur_correct;
+				int y = 0;
+			}
+		}
+		_layers[i].LastGrad = Grad;
+	}
+}
+
+void NeuroNet::NeuralNetwork::BackPropagation(Problem & test)
+{
 	int countLayers = _layers.size();
 
 	//calc delta
@@ -92,12 +139,15 @@ NeuroNet::Matrix2d NeuroNet::NeuralNetwork::GetOut() const
 std::ostream & NeuroNet::operator<<(std::ostream & os, NeuralNetwork & net)
 {
 	os << std::endl << "Input neurons:" << std::endl;
-	for (int i = 0; i < net._layers[0].Axons.GetVerticalSize(); ++i)
-		os << "\tinput[" << i << "] = " << net._layers[0].Axons[i][0] << std::endl;
+	for (int i = 0; i < net._layers[0].Axons.GetHorizontalSize(); ++i)
+		os << net._layers[0].Axons[0][i] << " ";
+
+	os << std::endl;
 
 	os << std::endl << "Output neurons:" << std::endl;
-	for (int i = 0; i < net._layers.back().Axons.GetVerticalSize(); ++i)
-		os << "\toutput[" << i << "] = " << net._layers.back().Axons[i][0] << std::endl;
+	for (int i = 0; i < net._layers.back().Axons.GetHorizontalSize(); ++i)
+		os << net._layers.back().Axons[0][i] << " ";
+	os << std::endl;
 	os << std::endl;
 	return os;
 }

@@ -9,7 +9,7 @@ namespace NeuroNet
 	public:
 		Matrix2d() {};
 		Matrix2d(int n, int m);
-		void Init(int n, int m);
+		void Init(int n, int m, double val = 0.0);
 		void InitRandom(int n, int m);
 		int GetHorizontalSize() const;
 		int GetVerticalSize() const;

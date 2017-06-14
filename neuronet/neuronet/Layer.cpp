@@ -48,6 +48,8 @@ NeuroNet::Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFu
 	Axons.Init (neuronCount,1);
 	Delta.Init (neuronCount,1);
 	LastDelta.Init(neuronCount,1);
+	LastGrad.Init(neuronCount, prevNeuronCount);
+	CorrectVal.Init(neuronCount, prevNeuronCount, 0.1);
 }
 
 //TODO add const operation
