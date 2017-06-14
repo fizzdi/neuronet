@@ -29,12 +29,12 @@ void NeuroNet::Matrix2d::InitRandom(int n, int m)
 
 int NeuroNet::Matrix2d::GetHorizontalSize() const
 {
-	return (GetVerticalSize() > 0 ? _matrix[0].size() : 0);
+	return (GetVerticalSize() > 0 ? (int)_matrix[0].size() : 0);
 }
 
 int NeuroNet::Matrix2d::GetVerticalSize() const
 {
-	return _matrix.size();
+	return (int)_matrix.size();
 }
 
 void NeuroNet::Matrix2d::Clear()
@@ -73,8 +73,8 @@ NeuroNet::Matrix2d NeuroNet::Matrix2d::operator*(const double & rhs)
 
 NeuroNet::Matrix2d NeuroNet::Matrix2d::operator+(const Matrix2d & rhs)
 {
-	int n = this->_matrix.size();
-	int m = rhs._matrix.size() > 0 ? rhs._matrix[0].size() : 0;
+	int n = (int)this->_matrix.size();
+	int m = rhs._matrix.size() > 0 ? (int)rhs._matrix[0].size() : 0;
 	Matrix2d res(n, m);
 
 	for (int i = 0; i < n; ++i)
@@ -89,8 +89,8 @@ NeuroNet::Matrix2d NeuroNet::Matrix2d::operator+(const Matrix2d & rhs)
 
 NeuroNet::Matrix2d NeuroNet::Matrix2d::operator-(const Matrix2d & rhs)
 {
-	int n = this->_matrix.size();
-	int m = rhs._matrix.size() > 0 ? rhs._matrix[0].size() : 0;
+	int n = (int)this->_matrix.size();
+	int m = rhs._matrix.size() > 0 ? (int)rhs._matrix[0].size() : 0;
 	Matrix2d res(n, m);
 
 	for (int i = 0; i < n; ++i)
@@ -141,7 +141,7 @@ NeuroNet::Matrix2d NeuroNet::Matrix2d::operator=(const Matrix2d & rhs)
 	return *this;
 }
 
-NeuroNet::Matrix2d NeuroNet::Matrix2d::operator!()
+NeuroNet::Matrix2d NeuroNet::Matrix2d::operator!() const
 {
 	Matrix2d old;
 	int n = GetHorizontalSize();
@@ -160,7 +160,7 @@ std::vector<double>& NeuroNet::Matrix2d::operator[](const int i)
 
 NeuroNet::Matrix2d NeuroNet::Matrix2d::multiplication(const Matrix2d & rhs)
 {
-	Matrix2d res(rhs._matrix.size(), rhs._matrix[0].size());
+	Matrix2d res((int)rhs._matrix.size(), (int)rhs._matrix[0].size());
 	for (int i = 0; i < rhs._matrix.size(); ++i)
 		for (int j = 0; j < rhs._matrix[i].size(); ++j)
 			res[i][j] = this->_matrix[i][j] * rhs._matrix[i][j];

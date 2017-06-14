@@ -44,7 +44,6 @@ NeuroNet::Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFu
 {
 	_aftype = activationFunction;
 	Weights.InitRandom(neuronCount, prevNeuronCount);
-	Correct.Init(neuronCount, prevNeuronCount);
 	States.Init(neuronCount,1);
 	Axons.Init (neuronCount,1);
 	Delta.Init (neuronCount,1);

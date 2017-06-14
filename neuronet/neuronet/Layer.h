@@ -21,12 +21,14 @@ namespace NeuroNet
 		NeuroNet::Matrix2d States;
 		NeuroNet::Matrix2d Delta;
 		NeuroNet::Matrix2d LastDelta;
+		Matrix2d GetDiff();
+		Matrix2d Weights;
+
+		//----------------------------------
+		//Functions
 		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction);
 		void CalculateStates(Layer &prevLayer);
 		void CalculateAxons();
-		Matrix2d GetDiff();
-		double GetDiff(double val);
-		Matrix2d Weights;
-		Matrix2d Correct;
+		double GetDiff(double val);		
 	};
 }

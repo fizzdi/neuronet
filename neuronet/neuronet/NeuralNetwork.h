@@ -22,17 +22,17 @@ namespace NeuroNet
 	protected:
 		std::vector<Layer> _layers;
 	public:
+		std::vector<Problem> TrainingSet;
+
 		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
 		double RunTrainingSet(bool print = false);
-		std::vector<Problem> TrainingSet;
-		friend std::ostream& operator<< (std::ostream &os, NeuralNetwork &net);
-		void PrintProblemResult(Problem& test);
 		double CalculateError(Problem& test, bool print = false);
-		void CorrectWeights();
+		void Run(const Matrix2d &inputs);
+		void PrintProblemResult(Problem& test);
 		void CalcCorrectWeights(Problem& test);
 
-		void Run(Matrix2d &inputs);
 
 		Matrix2d GetOut() const;
+		friend std::ostream& operator<< (std::ostream &os, NeuralNetwork &net);
 	};
 }

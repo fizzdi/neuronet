@@ -22,7 +22,7 @@ namespace NeuroNet
 		Matrix2d operator= (const std::vector<std::vector<double>> &rhs);
 		Matrix2d operator= (const Matrix2d &rhs);
 		Matrix2d operator= (const std::vector<double> &rhs);
-		Matrix2d operator! ();
+		Matrix2d operator! () const;
 		std::vector<double>& operator[] (const int i);
 		Matrix2d multiplication(const Matrix2d &rhs);
 		const double sum();

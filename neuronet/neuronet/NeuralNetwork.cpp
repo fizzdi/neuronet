@@ -14,9 +14,6 @@ void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCo
 double NeuroNet::NeuralNetwork::RunTrainingSet(bool print)
 {
 	double maxError = 0.0;
-	for (int i = 0; i < _layers.size(); ++i)
-		_layers[i].Correct.Clear();
-
 	for each (Problem test in TrainingSet)
 	{
 		//init input layer
@@ -58,14 +55,6 @@ double NeuroNet::NeuralNetwork::CalculateError(Problem & test, bool print)
 	return error;
 }
 
-void NeuroNet::NeuralNetwork::CorrectWeights()
-{
-	for (int i = 0; i < _layers.size(); ++i)
-	{
-		_layers[i].Weights += _layers[i].Correct;
-	}
-}
-
 void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 {
 	//PROP
@@ -78,10 +67,10 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 		_layers[i].Delta = (_layers[i + 1].Delta * _layers[i + 1].Weights).multiplication(_layers[i].GetDiff());
 
 	for (int i = 1; i < countLayers; ++i)
-		_layers[i].Correct += !_layers[i].Delta * _layers[i - 1].Axons * EducationalSpeed;
+		_layers[i].Weights += !_layers[i].Delta * _layers[i - 1].Axons * EducationalSpeed;
 }
 
-void NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
+void NeuroNet::NeuralNetwork::Run(const NeuroNet::Matrix2d& inputs)
 {
 	//init input layer
 	_layers[0].States = inputs;

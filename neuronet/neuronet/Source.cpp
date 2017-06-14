@@ -1,5 +1,4 @@
 #include "NeuralNetwork.h"
-#include "Elman.h"
 #include <algorithm>
 #include <ctime>
 using namespace std;
@@ -27,7 +26,6 @@ int main()
 	for (int i = 0; i < Epoh; ++i)
 	{
 		lstError = maxError;
-		net.CorrectWeights();
 		//cout << endl << endl << "CORRECT" << endl << endl;
 		maxError = net.RunTrainingSet();
 		if (i % 1000 == 0)
