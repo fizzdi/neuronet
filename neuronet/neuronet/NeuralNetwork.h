@@ -16,12 +16,16 @@ namespace NeuroNet
 		}
 	};
 
+	enum LearningType { RPROP, PROP };
+
+
 	class NeuralNetwork
 	{
 	protected:
 		std::vector<Layer> _layers;
+		LearningType _learn;
 	public:
-		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
+		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction, LearningType Learn);
 		double RunTrainingSet(bool print = false);
 		std::vector<Problem> TrainingSet;
 		friend std::ostream& operator<< (std::ostream &os, NeuralNetwork &net);
@@ -29,6 +33,8 @@ namespace NeuroNet
 		double CalculateError(Problem& test, bool print = false);
 		void CorrectWeights();
 		void CalcCorrectWeights(Problem& test);
+		void ResilientPropagation(Problem& test);
+		void BackPropagation(Problem& test);
 
 		Matrix2d Run(Matrix2d &inputs);
 	};

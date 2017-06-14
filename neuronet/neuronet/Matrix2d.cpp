@@ -1,6 +1,7 @@
 #include "Matrix2d.h"
 #include <exception>
 #include <algorithm>
+#include <cmath>
 
 
 NeuroNet::Matrix2d::Matrix2d(int n, int m, double val)
@@ -173,6 +174,24 @@ const double NeuroNet::Matrix2d::sum()
 		for (int j = 0; j < _matrix[i].size(); ++j)
 			ans += _matrix[i][j];
 	return ans;
+}
+
+NeuroNet::Matrix2d NeuroNet::Matrix2d::sqrt() const
+{
+	Matrix2d res = *this;
+	for (int i = 0; i < _matrix.size(); ++i)
+		for (int j = 0; j < _matrix[i].size(); ++j)
+			res[i][j] = std::sqrt(this->_matrix[i][j]);
+	return res;
+}
+
+NeuroNet::Matrix2d NeuroNet::Matrix2d::abs() const
+{
+	Matrix2d res = *this;
+	for (int i = 0; i < _matrix.size(); ++i)
+		for (int j = 0; j < _matrix[i].size(); ++j)
+			res[i][j] = std::abs(this->_matrix[i][j]);
+	return res;
 }
 
 std::vector<std::vector<double>>::iterator NeuroNet::Matrix2d::rowbegin()

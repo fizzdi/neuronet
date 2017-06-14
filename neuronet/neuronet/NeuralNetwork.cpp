@@ -2,12 +2,13 @@
 #include <iostream>
 #include <algorithm>
 
-void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
+void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction, LearningType Learn)
 {
 	_layers.clear();
 	_layers.push_back(Layer(InputCount, 0, LINE));
 	_layers.push_back(Layer(NeuronCount, InputCount, HiddenLayerFunction));
 	_layers.push_back(Layer(OutputCount, NeuronCount, LINE));
+	_learn = Learn;
 }
 
 //TODO global var debug
@@ -54,7 +55,8 @@ void NeuroNet::NeuralNetwork::PrintProblemResult(Problem & test)
 double NeuroNet::NeuralNetwork::CalculateError(Problem & test, bool print)
 {
 	//MSE
-	double error = (test.outputs - _layers.back().Axons).multiplication(test.outputs - _layers.back().Axons).sum() / 2;
+	//double error = (test.outputs - _layers.back().Axons).multiplication(test.outputs - _layers.back().Axons).sum() / 2;
+	double error = (test.outputs - _layers[2].Axons).abs().sqrt().sum() / 2;
 	if (print)
 	{
 		std::cout << "Error: " << error << std::endl;
@@ -75,6 +77,21 @@ void NeuroNet::NeuralNetwork::CorrectWeights()
 }
 
 void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
+{
+	switch (_learn)
+	{
+	case PROP:
+		BackPropagation(test);
+		break;
+	case RPROP:
+		ResilientPropagation(test);
+		break;
+	default:
+		break;
+	}
+}
+
+void NeuroNet::NeuralNetwork::ResilientPropagation(Problem & test)
 {
 	//RPROP
 	int countLayers = _layers.size();
@@ -118,6 +135,23 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 		//_layers[i].Weights += _layers[i].Correct;
 		//_layers[i].Correct.Clear();
 	}
+}
+
+void NeuroNet::NeuralNetwork::BackPropagation(Problem & test)
+{
+	const double EducationalSpeed = 0.01;
+
+	//PROP
+	int countLayers = _layers.size();
+
+	//calc delta
+	_layers.back().Delta = (test.outputs - _layers.back().Axons).multiplication(_layers.back().GetDiff());
+
+	for (int i = 1; i >= 0; --i)
+		_layers[i].Delta = (_layers[i + 1].Delta * _layers[i + 1].Weights).multiplication(_layers[i].GetDiff());
+
+	for (int i = 1; i < 3; ++i)
+		_layers[i].Weights += !_layers[i].Delta * _layers[i - 1].Axons * EducationalSpeed;
 }
 
 NeuroNet::Matrix2d NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)

@@ -26,6 +26,9 @@ namespace NeuroNet
 		std::vector<double>& operator[] (const int i);
 		Matrix2d multiplication(const Matrix2d &rhs);
 		const double sum();
+		Matrix2d sqrt() const;
+		Matrix2d abs() const;
+
 		std::vector<std::vector<double>>::iterator rowbegin();
 		std::vector<std::vector<double>>::iterator rowend();
 	};

@@ -2,10 +2,11 @@
 #include "Elman.h"
 #include <algorithm>
 #include <ctime>
+#include <iomanip>
 const int num_check = 50;
-const int HiddenNeuron = 7; //sin - 30
+const int HiddenNeuron = 20; //sin - 30
 const int SampleCount = 1;
-const int Epoh = 20;
+const int Epoh =10000;
 
 using namespace std;
 double test_fun(double x)
@@ -16,16 +17,14 @@ double test_fun(double x)
 int main()
 {
 	std::ios::sync_with_stdio(false);
-	NeuroNet::Elman net;
+	NeuroNet::NeuralNetwork net;
 	//srand(1);	
 	srand(time(NULL));
 
-	net.Init(6, 6, HiddenNeuron, NeuroNet::SIGM);
-	/*for (int i = 0; i < SampleCount; ++i)
-	{
-		double x = -1.0+(rand()*1.0 / (RAND_MAX/2));
-		double y = test_fun(x);*/
-		//0 3 5 2 0
+	cout << fixed << setprecision(6);
+
+	/*net.Init(6, 6, HiddenNeuron, NeuroNet::SIGM, NeuroNet::PROP);
+	//0 3 5 2 0
 	net.TrainingSet.push_back(NeuroNet::Problem({ 1,0,0,0,0,0 }, { 0,0,0,1,0,0 }));
 	net.TrainingSet.push_back(NeuroNet::Problem({ 0,0,0,1,0,0 }, { 0,0,0,0,0,1 }));
 	net.TrainingSet.push_back(NeuroNet::Problem({ 0,0,0,0,0,1 }, { 0,0,1,0,0,0 }));
@@ -34,17 +33,24 @@ int main()
 	cout << "0) " << net.RunTrainingSet(true) << endl;
 	double lstError = 0.0;
 	double maxError = 0.0;
+	cout << "=======================================================================" << endl;
+	cout << "***********************************************************************" << endl;
+	cout << "=======================================================================" << endl;
 	for (int i = 1; i <= Epoh; ++i)
 	{
-		cout << "=======================================================================" << endl;
 		lstError = maxError;
-		//net.CorrectWeights();
-		//cout << endl << endl << "CORRECT" << endl << endl;
-		maxError = net.RunTrainingSet(true);
-		//if (i % 1000 == 0)
-		cout << i << ") " << maxError << " (" << abs(maxError - lstError) << ")" << endl;
-		cout.flush();
-		int t = 1e6;
+		bool fl = i % 100 == 0;
+		maxError = net.RunTrainingSet(fl);
+
+		if (fl)
+		{
+			cout << i << ") " << maxError << " (" << abs(maxError - lstError) << ")" << endl;
+			cout << "=======================================================================" << endl;
+			cout << "***********************************************************************" << endl;
+			cout << "=======================================================================" << endl;
+			cout.flush();
+		}
+
 		if (maxError < 1e-3 || abs(maxError - lstError) < 1e-8 || maxError > 1e6)
 		{
 			cout << "STOP " << i << ") " << maxError << " (" << abs(maxError - lstError) << ")" << endl;
@@ -63,8 +69,8 @@ int main()
 		{
 			int num = rand() % 6;
 			auto outputs = net.Run(net.TrainingSet[0].inputs);
-			cout << "(0)";
-			int p;
+			cout << "(0) ";
+			int p = 0;
 			int index = 0;
 			bool flag = false;
 			bool stop = false;
@@ -74,7 +80,7 @@ int main()
 				for (int j = 0; j < 6; ++j)
 				{
 					cout << outputs[0][j] << " ";
-					if (outputs[0][j] > 0.4)
+					if (outputs[0][j] > 0.3)
 						p = j;
 				}
 				cout << endl;
@@ -104,7 +110,7 @@ int main()
 					}
 				} // i
 
-				outputs = net.Run(inp);
+ 				outputs = net.Run(inp);
 
 			} while (stop == false);
 			if ((index > 4) && (sucs == true)) {
@@ -118,6 +124,57 @@ int main()
 			else {
 				cout << "Failed." << endl;
 			}
+			cout << endl;
+		}
+		cout << endl << "Sum Error: " << error << endl;
+		cout << "MAX Error: " << max_error << endl;
+		cout << "Avg Error: " << error / num_check << endl;
+
+	}*/
+
+	net.Init(1, 1, HiddenNeuron, NeuroNet::TANH, NeuroNet::PROP);
+	for (int i = 0; i < SampleCount; ++i)
+	{
+		double x = -1.0 + (rand()*1.0 / (RAND_MAX / 2));
+		double y = test_fun(x);
+		net.TrainingSet.push_back(NeuroNet::Problem({ x }, { y }));
+	}
+	double maxError = net.RunTrainingSet();
+	cout << "0) " << maxError << endl;
+	double lstError = 0.0;
+	for (int i = 1; i <= Epoh; ++i)
+	{
+		lstError = maxError;
+		//net.CorrectWeights();
+		//cout << endl << endl << "CORRECT" << endl << endl;
+		maxError = net.RunTrainingSet();
+		if (i % 500 == 0)
+			cout << i << ") " << maxError << " (" << abs(maxError - lstError) << ")" << endl;
+		cout.flush();
+		if (maxError < 1e-6 || abs(maxError - lstError) < 1e-9 || maxError > 1e6)
+		{
+			cout << "STOP " << i << ") " << maxError << " (" << abs(maxError - lstError) << ")" << endl;
+			break;
+		}
+	}
+
+	cout << endl << "------------------------------------------" << endl;
+
+	vector<double> inputs(1);
+	{
+		double error = 0.0;
+		double max_error = 0.0;
+		for (int i = 0; i < num_check; ++i)
+		{
+			inputs[0] = -1.0 + (rand()*1.0 / (RAND_MAX / 2));
+			double ideal = test_fun(inputs[0]);
+			NeuroNet::Matrix2d inpm;
+			inpm.operator=(inputs);
+			auto outputs = net.Run(inpm);
+			double curerror = abs(outputs[0][0] - ideal);
+			error += curerror;
+			cout << inputs[0] << " " << outputs[0][0] << " (" << ideal << ") error: " << curerror << endl;
+			max_error = max(max_error, curerror);
 		}
 		cout << endl << "Sum Error: " << error << endl;
 		cout << "MAX Error: " << max_error << endl;
