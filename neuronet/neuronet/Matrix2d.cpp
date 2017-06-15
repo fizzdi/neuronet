@@ -3,16 +3,16 @@
 #include <algorithm>
 
 
-NeuroNet::Matrix2d::Matrix2d(int n, int m)
+NeuroNet::Matrix2d::Matrix2d(int n, int m, double val)
 {
 	_matrix.resize(0);
-	_matrix.resize(n, std::vector<double>(m, 0.0));
+	_matrix.resize(n, std::vector<double>(m, val));
 }
 
 void NeuroNet::Matrix2d::Init(int n, int m, double val)
 {
 	_matrix.resize(0);
-	_matrix.resize(n, std::vector<double>(m,val));
+	_matrix.resize(n, std::vector<double>(m, val));
 }
 
 void NeuroNet::Matrix2d::InitRandom(int n, int m)
@@ -22,7 +22,7 @@ void NeuroNet::Matrix2d::InitRandom(int n, int m)
 	{
 		for (int j = 0; j < m; ++j)
 		{
-			_matrix[i][j] = -1 + (rand())*2.0 / (RAND_MAX);
+			_matrix[i][j] = -0.5 + rand() *1.0/ RAND_MAX;
 		}
 	}
 }
@@ -67,7 +67,7 @@ NeuroNet::Matrix2d NeuroNet::Matrix2d::operator*(const double & rhs)
 
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < m; ++j)
-				res._matrix[i][j] += _matrix[i][j] * rhs;
+			res._matrix[i][j] += _matrix[i][j] * rhs;
 	return res;
 }
 
@@ -150,6 +150,30 @@ NeuroNet::Matrix2d NeuroNet::Matrix2d::operator!() const
 	for (int i = 0; i < m; ++i)
 		for (int j = 0; j < n; ++j)
 			old._matrix[j][i] = _matrix[i][j];
+	return old;
+}
+
+NeuroNet::Matrix2d NeuroNet::Matrix2d::sqrt() const
+{
+	Matrix2d old;
+	int n = GetHorizontalSize();
+	int m = GetVerticalSize();
+	old.Init(n, m);
+	for (int i = 0; i < m; ++i)
+		for (int j = 0; j < n; ++j)
+			old._matrix[j][i] = std::sqrt(_matrix[i][j]);
+	return old;
+}
+
+NeuroNet::Matrix2d NeuroNet::Matrix2d::abs() const
+{
+	Matrix2d old;
+	int n = GetHorizontalSize();
+	int m = GetVerticalSize();
+	old.Init(n, m);
+	for (int i = 0; i < m; ++i)
+		for (int j = 0; j < n; ++j)
+			old._matrix[j][i] = std::abs(_matrix[i][j]);
 	return old;
 }
 

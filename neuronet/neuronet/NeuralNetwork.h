@@ -3,7 +3,7 @@
 #include "Layer.h"
 #include <vector>
 #include <iostream>
-const double EducationalSpeed = 0.001;
+const double EducationalSpeed = 0.000001;
 
 namespace NeuroNet
 {
@@ -28,9 +28,9 @@ namespace NeuroNet
 		std::vector<Problem> TrainingSet;
 
 		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction, LearningType Learn);
+		void Run(Matrix2d &inputs);
 		double RunTrainingSet(bool print = false);
 		double CalculateError(Problem& test, bool print = false);
-		void Run(const Matrix2d &inputs);
 		void PrintProblemResult(Problem& test);
 		void CalcCorrectWeights(Problem& test);
 		void ResilientPropagation(Problem& test);

@@ -2,11 +2,15 @@
 #include <algorithm>
 #include <ctime>
 using namespace std;
-const int num_check = 30;
-const int HiddenNeuron =20; //sin - 30
-const int SampleCount = 5;
-const int Epoh = 100000;
-#define TESTFUNC sin
+const int num_check = 150;
+const int HiddenNeuron = 5; //sin - 11 15
+const int SampleCount = 15;
+const int Epoh = 200;
+
+double testfun(double x)
+{
+	return sin(x);
+}
 int main()
 {
 	std::ios::sync_with_stdio(false);
@@ -14,55 +18,71 @@ int main()
 	//srand(1);
 	srand(time(NULL));
 
-	net.Init(1, 1, HiddenNeuron, NeuroNet::TANH, NeuroNet::BACKPROP);
+	bool failed = false;
+	net.Init(1, 1, HiddenNeuron, NeuroNet::TANH, NeuroNet::RPROP);
 	for (int i = 0; i < SampleCount; ++i)
 	{
-		double x = -1+rand()*2.0 / RAND_MAX;
-		double y = TESTFUNC(x);
+		double x = -1+ rand()*2.0/RAND_MAX;
+		double y = testfun(x);
 		net.TrainingSet.push_back(NeuroNet::Problem({ x }, { y}));
 	}
 	double lstError = 0.0;
-	double maxError = 0.0;
+	double Error = 0.0;
 	int curEpoh = 1;
 	do
 	{
-		lstError = maxError;
-		maxError = net.RunTrainingSet();
-		bool fl = curEpoh % 1000 == 0;
+		lstError = Error;
+		bool fl = curEpoh % 10 == 0;
+		Error = net.RunTrainingSet(true);
 		if (fl)
 		{
 			cout << endl << "================================================================================================" << endl;
-			cout << curEpoh << ") " << maxError << " (" << abs(maxError - lstError) << ")" << endl;
+			cout << curEpoh << ") " << Error << " (" << abs(Error - lstError) << ")" << endl;
+			cout.flush();
 		}
-		if (maxError < 1e-6 || abs(maxError - lstError) < 1e-10)
+		if (Error < 1e-6 || abs(Error - lstError) < 1e-12)
 		{
-			cout << "STOP Epoh: " << curEpoh << " " << maxError << " (" << abs(maxError - lstError) << ")" << endl;
+			cout << "STOP Epoh: " << curEpoh << " " << Error << " (" << abs(Error - lstError) << ")" << endl;
+			break;
+		}
+
+		auto y = -nan("");
+		if (Error > 1e9 /*|| !(!(Error < -nan("")) && !(Error < -nan("")))*/)
+		{
+			cout << "Failed" << endl;
+			failed = true;
 			break;
 		}
 		curEpoh++;
 	} while (curEpoh < Epoh);
 
-	vector<double> inputs(1);
-	{
-		double error = 0.0;
-		double max_error = 0.0;
-		for (int i = 0; i < num_check; ++i)
-		{
-			inputs[0] = -1+rand()*2.0 / RAND_MAX;
-			double ideal = TESTFUNC(inputs[0]);
-			NeuroNet::Matrix2d inpm;
-			inpm = inputs;
-			net.Run(inpm);
-			auto outputs = net.GetOut();
-			double curerror = abs(outputs[0][0] - ideal);
-			error += curerror;
-			cout << inputs[0] << " " << outputs[0][0] << " (" << ideal << ") error: " << curerror << endl;
-			max_error = max(max_error, curerror);
-		}
-		cout << endl << "Sum Error: " << error << endl;
-		cout << "MAX Error: " << max_error << endl;
-		cout << "Avg Error: " << error / num_check << endl;
+	cout << "End Epoh: " << curEpoh << " Error:" << Error << " (" << abs(Error - lstError) << ")" << endl;
 
+
+	if (!failed)
+	{
+		vector<double> inputs(1);
+		{
+			double error = 0.0;
+			double max_error = 0.0;
+			for (int i = 0; i < num_check; ++i)
+			{
+				inputs[0] = -1 + rand()*2.0 / RAND_MAX;
+				double ideal = testfun(inputs[0]);
+				NeuroNet::Matrix2d inpm;
+				inpm = inputs;
+				net.Run(inpm);
+				auto outputs = net.GetOut();
+				double curerror = abs(outputs[0][0] - ideal) * abs(outputs[0][0] - ideal) / 2;
+				error += curerror;
+				cout << inputs[0] << " " << outputs[0][0] << " (" << ideal << ") error: " << abs(outputs[0][0] - ideal)  << " mse: "<< curerror << endl;
+				max_error = max(max_error, curerror);
+			}
+			cout << endl << "Sum Error: " << error << endl;
+			cout << "MAX Error: " << max_error << endl;
+			cout << "Avg Error: " << error / num_check << endl;
+
+		}
 	}
 
 	system("pause");

@@ -25,12 +25,15 @@ namespace NeuroNet
 		Matrix2d CorrectVal;
 		Matrix2d GetDiff();
 		Matrix2d Weights;
+		Matrix2d Bias;
+		
 
 		//----------------------------------
 		//Functions
-		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction);
+		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction, bool bias = false);
 		void CalculateStates(Layer &prevLayer);
 		void CalculateAxons();
 		double GetDiff(double val);		
+		void NguenWidrow();
 	};
 }
