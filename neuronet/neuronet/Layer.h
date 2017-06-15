@@ -21,8 +21,10 @@ namespace NeuroNet
 		Matrix2d States;
 		Matrix2d Delta;
 		Matrix2d LastDelta;
+		Matrix2d Grad;
 		Matrix2d LastGrad;
 		Matrix2d CorrectVal;
+		Matrix2d BiasCorrectVal;
 		Matrix2d GetDiff();
 		Matrix2d Weights;
 		Matrix2d Bias;
@@ -34,6 +36,6 @@ namespace NeuroNet
 		void CalculateStates(Layer &prevLayer);
 		void CalculateAxons();
 		double GetDiff(double val);		
-		void NguenWidrow();
+		void NguenWidrow(double Xmin, double Xmax, double Ymin, double Ymax);
 	};
 }

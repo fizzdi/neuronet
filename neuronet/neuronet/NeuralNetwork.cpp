@@ -2,17 +2,28 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include "Common.h"
 
 void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction, LearningType Learn)
 {
 	_layers.clear();
 	_layers.push_back(Layer(InputCount, 0, LINE));
 	_layers.push_back(Layer(NeuronCount, InputCount, HiddenLayerFunction, true));
-	_layers.back().NguenWidrow();
+	_layers.back().NguenWidrow(-2, 2, -1, 1);
 	_layers.push_back(Layer(OutputCount, NeuronCount, LINE, true));
-	_layers.back().NguenWidrow();
+	//_layers.back().NguenWidrow(-1, 1, -1, 1);
 
 	_learn = Learn;
+
+	LastDeltaSum.resize(3);
+	LastGradSum.resize(3);
+	for (int i = 0; i < 3; ++i)
+	{
+		LastGradSum[i].Init(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
+		LastDeltaSum[i].Init(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
+	}
+
+	std::cout << _layers[1].Weights << std::endl << _layers[2].Weights << std::endl;
 }
 
 //TODO global var debug
@@ -21,9 +32,68 @@ double NeuroNet::NeuralNetwork::RunTrainingSet(bool print)
 	double error = 0.0;
 	for each (Problem test in TrainingSet)
 	{
-		Run(test.inputs);
+		Run(test);
+		if (print) PrintProblemResult(test);
 		error = CalculateError(test);
-		CalcCorrectWeights(test);		
+		CalcCorrectWeights(test);
+	}
+	return error;
+}
+
+double NeuroNet::NeuralNetwork::RunTrainingSetOffline(bool print)
+{
+	int countLayers = _layers.size();
+	std::vector<Matrix2d> GradSum(3);
+	std::vector<Matrix2d> DeltaSum(3);
+	
+	for (int i = 0; i < 3; ++i)
+	{
+		GradSum[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
+		DeltaSum[i] = Matrix2d(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
+	}
+	int y = 0;
+	for each (Problem test in TrainingSet)
+	{
+		Run(test);
+
+		for (int i = 1; i < 3; ++i)
+		{
+			GradSum[i] += _layers[i].Grad;
+			DeltaSum[i] += _layers[i].Delta;
+		}
+		if (print) PrintProblemResult(test);
+	}
+	if (print) std::cout << std::endl << "=======CORRECT==========" << std::endl;
+	/*std::cout << "GradSum" << std::endl;
+	std::cout << GradSum[1] << std::endl;
+	std::cout << GradSum[2] << std::endl;
+	std::cout << "DeltaSum" << std::endl;
+	std::cout << DeltaSum[1] << std::endl;
+	std::cout << DeltaSum[2] << std::endl;
+	std::cout << "CorrectVal" << std::endl;
+	std::cout << _layers[1].CorrectVal << std::endl;
+	std::cout << _layers[2].CorrectVal << std::endl;
+	std::cout << "BiasCorrectVal" << std::endl;
+	std::cout << _layers[1].BiasCorrectVal << std::endl;
+	std::cout << _layers[2].BiasCorrectVal << std::endl;*/
+
+	double normGrad = 0.0;
+	for (int i = 0; i < countLayers; ++i)
+		normGrad += (GradSum[i] * !GradSum[i]).sqrt().sum();
+
+	if (normGrad < 1e-6)
+		return 0.0;
+	ResilientPropagation(LastGradSum, GradSum, LastDeltaSum, DeltaSum);
+	LastGradSum = GradSum;
+	LastDeltaSum = DeltaSum;
+
+
+	double error = 0.0;
+	for each (Problem test in TrainingSet)
+	{
+		Run(test);
+		if (print) PrintProblemResult(test);
+		error += CalculateError(test, print);
 	}
 	return error;
 }
@@ -40,14 +110,13 @@ void NeuroNet::NeuralNetwork::PrintProblemResult(Problem & test)
 double NeuroNet::NeuralNetwork::CalculateError(Problem & test, bool print)
 {
 	//MSE
-	double error = (test.outputs - _layers.back().Axons).multiplication(test.outputs - _layers.back().Axons).sum()/2.0;
-
+	double error = (test.outputs - _layers.back().Axons).multiplication(test.outputs - _layers.back().Axons).sum() / 2.0;
 	//RootMSE
 	//double error = (test.outputs - _layers.back().Axons).abs().sqrt().sum() / 2.0;
 
 	if (print)
 	{
-		std::cout << "Error: " << error << std::endl;
+		std::cout << "MSE: " << error << std::endl;
 		std::cout << "---------------------------------------------------------------------------------" << std::endl;
 	}
 	return error;
@@ -70,9 +139,12 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 
 void NeuroNet::NeuralNetwork::ResilientPropagation(Problem & test)
 {
+	const double EttaPlus = 1.2, EttaMinus = 0.5;
+	//const double EttaPlus = 0.5, EttaMinus = 1.2;
 	int countLayers = _layers.size();
 
 	//calc delta
+	//_layers.back().Delta = (test.outputs - _layers.back().Axons).multiplication(_layers.back().GetDiff());
 	_layers.back().Delta = (test.outputs - _layers.back().Axons).multiplication(_layers.back().GetDiff());
 
 	for (int i = countLayers - 2; i >= 0; --i)
@@ -81,25 +153,24 @@ void NeuroNet::NeuralNetwork::ResilientPropagation(Problem & test)
 	for (int i = 1; i < countLayers; ++i)
 	{
 		//TODO STL
-		Matrix2d Grad = !_layers[i].Delta * _layers[i - 1].Axons;
-		for (int j = 0; j < Grad.GetVerticalSize(); ++j)
+		_layers[i].Grad = !_layers[i].Delta * _layers[i - 1].Axons;
+		for (int j = 0; j < _layers[i].Grad.GetVerticalSize(); ++j)
 		{
-			for (int k = 0; k < Grad.GetHorizontalSize(); ++k)
+			for (int k = 0; k < _layers[i].Grad.GetHorizontalSize(); ++k)
 			{
 				double cur_correct = 0.0;
-				double cur_mult = Grad[j][k] * _layers[i].LastGrad[j][k];
-				if (cur_mult >= 0.0)
-					cur_correct = 1.2 * _layers[i].CorrectVal[j][k];
+				double cur_mult = _layers[i].Grad[j][k] * _layers[i].LastGrad[j][k];
+				if (cur_mult == 0.0)
+					cur_correct = rand()*1.0 / RAND_MAX;
+				if (cur_mult > 0.0)
+					cur_correct = std::min(EttaPlus * _layers[i].CorrectVal[j][k], 50.0);
 				else if (cur_mult < 0.0)
-					cur_correct = 0.5 * _layers[i].CorrectVal[j][k];
+					cur_correct = std::max(EttaMinus * _layers[i].CorrectVal[j][k], 1e-6);
 
-				cur_correct = std::min(cur_correct, 50.0);
-				cur_correct = std::max(cur_correct, 1e-7);
 				_layers[i].CorrectVal[j][k] = cur_correct;
 
-				if (Grad[j][k] == 0.0) continue;
 
-				if (Grad[j][k] > 0)
+				if (_layers[i].Grad[j][k] > 0)
 				{
 					_layers[i].Weights[j][k] += -cur_correct;
 					_layers[i].Bias[0][j] += -cur_correct;
@@ -109,11 +180,72 @@ void NeuroNet::NeuralNetwork::ResilientPropagation(Problem & test)
 					_layers[i].Weights[j][k] += cur_correct;
 					_layers[i].Bias[0][j] += cur_correct;
 				}
-				int y = 0;
 			}
-
 		}
-		_layers[i].LastGrad = Grad;
+		_layers[i].LastGrad = _layers[i].Grad;
+	}
+}
+
+void NeuroNet::NeuralNetwork::ResilientPropagation(std::vector<NeuroNet::Matrix2d> PrevSumGrad, std::vector<NeuroNet::Matrix2d> SumGrad, std::vector<NeuroNet::Matrix2d> PrevSumDelta, std::vector<NeuroNet::Matrix2d> SumDelta)
+{
+	const double EttaPlus = 1.2, EttaMinus = 0.5;
+	//const double EttaPlus = 0.5, EttaMinus = 1.2;
+	//const double EttaPlus = 1.0000001, EttaMinus = 0.5;
+	int countLayers = _layers.size();
+	for (int i = 1; i < countLayers; ++i)
+	{
+		for (int j = 0; j < SumGrad[i].GetVerticalSize(); ++j)
+		{
+			for (int k = 0; k < SumGrad[i].GetHorizontalSize(); ++k)
+			{
+				double cur_correct = 0.0;
+				double cur_mult = SumGrad[i][j][k] * PrevSumGrad[i][j][k];
+				if (cur_mult == 0.0)
+					cur_correct = Common::getRand(0, 1);
+				else if (cur_mult > 0.0)
+					cur_correct = std::min(EttaPlus * _layers[i].CorrectVal[j][k], 50.0);
+				else if (cur_mult < 0.0)
+					cur_correct = std::max(EttaMinus * _layers[i].CorrectVal[j][k], 1e-6);
+
+				_layers[i].CorrectVal[j][k] = cur_correct;
+
+				if (SumGrad[i][j][k] == 0.0) continue;
+
+				if (SumGrad[i][j][k] > 0)
+				{
+					_layers[i].Weights[j][k] += -cur_correct;
+				}
+				else
+				{
+					_layers[i].Weights[j][k] += cur_correct;
+				}
+			}
+		}
+
+		for (int j = 0; j < SumDelta[i].GetHorizontalSize(); ++j)
+		{
+			double cur_correct = 0.0;
+			double cur_mult = SumDelta[i][0][j] * PrevSumDelta[i][0][j];
+			if (cur_mult == 0.0)
+				cur_correct = Common::getRand(0, 1);
+			else if (cur_mult > 0.0)
+				cur_correct = std::min(EttaPlus * _layers[i].BiasCorrectVal[0][j], 50.0);
+			else if (cur_mult < 0.0)
+				cur_correct = std::max(EttaMinus * _layers[i].BiasCorrectVal[0][j], 1e-6);
+
+			_layers[i].BiasCorrectVal[0][j] = cur_correct;
+
+			if (SumDelta[i][0][j] == 0.0) continue;
+
+			if (SumDelta[i][0][j] > 0)
+			{
+				_layers[i].Bias[0][j] += -cur_correct;
+			}
+			else
+			{
+				_layers[i].Bias[0][j] += cur_correct;
+			}
+		}
 	}
 }
 
@@ -121,24 +253,19 @@ void NeuroNet::NeuralNetwork::BackPropagation(Problem & test)
 {
 	int countLayers = _layers.size();
 
-	//calc delta
-	_layers.back().Delta = (test.outputs - _layers.back().Axons).multiplication(_layers.back().GetDiff());
-
-	for (int i = countLayers - 2; i >= 0; --i)
-		_layers[i].Delta = (_layers[i + 1].Delta * _layers[i + 1].Weights).multiplication(_layers[i].GetDiff());
-
 	for (int i = 1; i < countLayers; ++i)
 	{
-		_layers[i].Weights += !_layers[i].Delta * _layers[i - 1].Axons * EducationalSpeed;
+		_layers[i].Weights += _layers[i].Grad * EducationalSpeed;
 		_layers[i].Bias += _layers[i].Delta * EducationalSpeed;
 	}
 }
 
-void NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
+void NeuroNet::NeuralNetwork::Run(NeuroNet::Problem test)
 {
+	int countLayers = _layers.size();
 	//init input layer
-	for (int i = 0; i < inputs.GetHorizontalSize(); ++i)
-		_layers[0].States[0][i] = inputs[0][i];
+	for (int i = 0; i < test.inputs.GetHorizontalSize(); ++i)
+		_layers[0].States[0][i] = test.inputs[0][i];
 	_layers[0].CalculateAxons();
 
 	//init hidden and output layers
@@ -148,27 +275,14 @@ void NeuroNet::NeuralNetwork::Run(NeuroNet::Matrix2d& inputs)
 		_layers[i].CalculateAxons();
 	}
 
-	//DEBUG----------------------------------
-	for (int i = 0; i < _layers.size(); ++i)
-	{
-		for (int j = 0; j < _layers[i].Axons.GetVerticalSize(); ++j)
-		{
-			for (int k = 0; k < _layers[i].Axons.GetHorizontalSize(); ++k)
-			{
-				std::ostringstream ss;
-				ss << _layers[i].Axons[j][k];
-				auto a = ss.str();
-				ss.str("");
-				//ss.clear();
-				ss << -nan("");
-				auto b = ss.str();
-				if (a == b)
-				{
-					int y = 0;
-				}
-			}
-		}
-	}
+	//_layers.back().Delta = (test.outputs - _layers.back().Axons).multiplication(_layers.back().GetDiff());
+	_layers.back().Delta = (_layers.back().Axons - test.outputs).multiplication(_layers.back().GetDiff());
+
+	for (int i = countLayers - 2; i >= 0; --i)
+		_layers[i].Delta = (_layers[i + 1].Delta * _layers[i + 1].Weights).multiplication(_layers[i].GetDiff());
+
+	for (int i = 1; i < countLayers; ++i)
+		_layers[i].Grad = !_layers[i].Delta * _layers[i - 1].Axons;
 }
 
 NeuroNet::Matrix2d NeuroNet::NeuralNetwork::GetOut() const
@@ -178,6 +292,18 @@ NeuroNet::Matrix2d NeuroNet::NeuralNetwork::GetOut() const
 
 std::ostream & NeuroNet::operator<<(std::ostream & os, NeuralNetwork & net)
 {
+	for (int i = 1; i < net._layers.size(); ++i)
+	{
+		os << "Weights " << i << " -> " << i - 1 << ": " << std::endl;
+		os << net._layers[i].Weights << std::endl;
+	}
+
+	for (int i = 1; i < net._layers.size(); ++i)
+	{
+		os << "Bias " << i << " -> " << i - 1 << ": " << std::endl;
+		os << net._layers[i].Bias << std::endl;
+	}
+
 	os << std::endl << "Input neurons:" << std::endl;
 	for (int i = 0; i < net._layers[0].Axons.GetHorizontalSize(); ++i)
 		os << net._layers[0].Axons[0][i] << " ";
@@ -188,6 +314,6 @@ std::ostream & NeuroNet::operator<<(std::ostream & os, NeuralNetwork & net)
 	for (int i = 0; i < net._layers.back().Axons.GetHorizontalSize(); ++i)
 		os << net._layers.back().Axons[0][i] << " ";
 	os << std::endl;
-	os << std::endl;
+	os << "===============" << std::endl;
 	return os;
 }

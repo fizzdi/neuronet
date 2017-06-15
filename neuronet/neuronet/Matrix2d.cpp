@@ -1,6 +1,8 @@
 #include "Matrix2d.h"
 #include <exception>
 #include <algorithm>
+#include <iostream>
+#include "Common.h"
 
 
 NeuroNet::Matrix2d::Matrix2d(int n, int m, double val)
@@ -22,7 +24,19 @@ void NeuroNet::Matrix2d::InitRandom(int n, int m)
 	{
 		for (int j = 0; j < m; ++j)
 		{
-			_matrix[i][j] = -0.5 + rand() *1.0/ RAND_MAX;
+			_matrix[i][j] = NeuroNet::Common::getRand(-0.5, 0.5);
+		}
+	}
+}
+
+void NeuroNet::Matrix2d::InitRandom(int n, int m, double minv, double maxv)
+{
+	Init(n, m);
+	for (int i = 0; i < n; ++i)
+	{
+		for (int j = 0; j < m; ++j)
+		{
+			_matrix[i][j] = NeuroNet::Common::getRand(minv, maxv);
 		}
 	}
 }
@@ -67,7 +81,7 @@ NeuroNet::Matrix2d NeuroNet::Matrix2d::operator*(const double & rhs)
 
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < m; ++j)
-			res._matrix[i][j] += _matrix[i][j] * rhs;
+			res._matrix[i][j] = _matrix[i][j] * rhs;
 	return res;
 }
 
@@ -82,6 +96,22 @@ NeuroNet::Matrix2d NeuroNet::Matrix2d::operator+(const Matrix2d & rhs)
 		for (int j = 0; j < m; ++j)
 		{
 			res._matrix[i][j] = _matrix[i][j] + rhs._matrix[i][j];
+		}
+	}
+	return res;
+}
+
+NeuroNet::Matrix2d NeuroNet::Matrix2d::operator+(const double & rhs)
+{
+	int n = (int)this->_matrix.size();
+	int m = this->_matrix.size() > 0 ? (int)this->_matrix[0].size() : 0;
+	Matrix2d res(n, m);
+
+	for (int i = 0; i < n; ++i)
+	{
+		for (int j = 0; j < m; ++j)
+		{
+			res._matrix[i][j] = _matrix[i][j] + rhs;
 		}
 	}
 	return res;
@@ -109,7 +139,7 @@ NeuroNet::Matrix2d NeuroNet::Matrix2d::operator+=(const Matrix2d & rhs)
 	{
 		for (int j = 0; j < this->_matrix[i].size(); ++j)
 		{
-			this->_matrix[i][j] = _matrix[i][j] + rhs._matrix[i][j];
+			_matrix[i][j] += rhs._matrix[i][j];
 		}
 	}
 	return *this;
@@ -216,4 +246,16 @@ NeuroNet::Matrix2d NeuroNet::Matrix2d::operator=(const std::vector<double>& rhs)
 	_matrix[0].resize(rhs.size());
 	std::copy(rhs.begin(), rhs.end(), _matrix[0].begin());
 	return *this;
+}
+
+std::ostream & NeuroNet::operator<<(std::ostream & os, const Matrix2d & m)
+{
+	for (int j = 0; j < m.GetVerticalSize(); ++j)
+	{
+		for (int k = 0; k < m.GetHorizontalSize(); ++k)
+			os << m._matrix[j][k] << " ";
+		os << std::endl;
+	}
+
+	return os;
 }
