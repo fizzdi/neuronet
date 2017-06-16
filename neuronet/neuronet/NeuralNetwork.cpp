@@ -12,6 +12,7 @@ void NeuroNet::NeuralNetwork::Init(int InputCount, int OutputCount, int NeuronCo
 	_layers.back().NguenWidrow(-2, 2, -1, 1);
 	_layers.push_back(Layer(OutputCount, NeuronCount, LINE, true));
 	//_layers.back().NguenWidrow(-1, 1, -1, 1);
+	_countlayers = _layers.size();
 
 	_learn = Learn;
 
@@ -40,7 +41,6 @@ double NeuroNet::NeuralNetwork::RunTrainingSet(bool print)
 
 double NeuroNet::NeuralNetwork::RunTrainingSetOffline(bool print)
 {
-	int countLayers = (int)_layers.size();
 	std::vector<Matrix2d> GradSum(3);
 	std::vector<Matrix2d> DeltaSum(3);
 	
@@ -76,7 +76,7 @@ double NeuroNet::NeuralNetwork::RunTrainingSetOffline(bool print)
 	std::cout << _layers[2].BiasCorrectVal << std::endl;*/
 
 	double normGrad = 0.0;
-	for (int i = 0; i < countLayers; ++i)
+	for (int i = 0; i < _countlayers; ++i)
 		normGrad += sqrt(GradSum[i] * !GradSum[i]).sum();
 
 	if (normGrad < 1e-6)
@@ -138,8 +138,7 @@ void NeuroNet::NeuralNetwork::CalcCorrectWeights(Problem& test)
 void NeuroNet::NeuralNetwork::ResilientPropagation(Problem & test)
 {
 	const double EttaPlus = 1.2, EttaMinus = 0.5;
-	int countLayers = (int)_layers.size();
-	for (int i = 1; i < countLayers; ++i)
+	for (int i = 1; i < _countlayers; ++i)
 	{
 		for (int j = 0; j < _layers[i].Grad.GetVerticalSize(); ++j)
 		{
@@ -191,8 +190,7 @@ void NeuroNet::NeuralNetwork::ResilientPropagation(Problem & test)
 void NeuroNet::NeuralNetwork::ResilientPropagation(std::vector<NeuroNet::Matrix2d> PrevSumGrad, std::vector<NeuroNet::Matrix2d> SumGrad, std::vector<NeuroNet::Matrix2d> PrevSumDelta, std::vector<NeuroNet::Matrix2d> SumDelta)
 {
 	const double EttaPlus = 1.2, EttaMinus = 0.5;
-	int countLayers = (int)_layers.size();
-	for (int i = 1; i < countLayers; ++i)
+	for (int i = 1; i < _countlayers; ++i)
 	{
 		for (int j = 0; j < SumGrad[i].GetVerticalSize(); ++j)
 		{
@@ -243,18 +241,32 @@ void NeuroNet::NeuralNetwork::ResilientPropagation(std::vector<NeuroNet::Matrix2
 
 void NeuroNet::NeuralNetwork::BackPropagation(Problem & test)
 {
-	int countLayers = (int)_layers.size();
-
-	for (int i = 1; i < countLayers; ++i)
+	for (int i = 1; i < _countlayers; ++i)
 	{
 		_layers[i].Weights += -_layers[i].Grad * EducationalSpeed;
 		_layers[i].Bias += -_layers[i].Delta * EducationalSpeed;
 	}
 }
 
+void NeuroNet::NeuralNetwork::CalcGradDelta(Problem & test)
+{
+	for (int i = 0; i < _countlayers; ++i)
+	{
+		_layers[i].LastDelta = _layers[i].Delta;
+		_layers[i].LastGrad = _layers[i].Grad;
+	}
+
+	_layers.back().Delta = (_layers.back().Axons - test.outputs).multiplication(_layers.back().GetDiff());
+
+	for (int i = _countlayers - 2; i >= 0; --i)
+		_layers[i].Delta = (_layers[i + 1].Delta * _layers[i + 1].Weights).multiplication(_layers[i].GetDiff());
+
+	for (int i = 1; i < _countlayers; ++i)
+		_layers[i].Grad = !_layers[i].Delta * _layers[i - 1].Axons;
+}
+
 void NeuroNet::NeuralNetwork::Run(NeuroNet::Problem test)
 {
-	int countLayers = (int)_layers.size();
 	//init input layer
 	for (int i = 0; i < test.inputs.GetHorizontalSize(); ++i)
 		_layers[0].States(0,i) = test.inputs(0,i);
@@ -267,19 +279,7 @@ void NeuroNet::NeuralNetwork::Run(NeuroNet::Problem test)
 		_layers[i].CalculateAxons();
 	}
 
-	for (int i = 0; i < countLayers; ++i)
-	{
-		_layers[i].LastDelta = _layers[i].Delta;
-		_layers[i].LastGrad = _layers[i].Grad;
-	}
-
-	_layers.back().Delta = (_layers.back().Axons - test.outputs).multiplication(_layers.back().GetDiff());
-
-	for (int i = countLayers - 2; i >= 0; --i)
-		_layers[i].Delta = (_layers[i + 1].Delta * _layers[i + 1].Weights).multiplication(_layers[i].GetDiff());
-
-	for (int i = 1; i < countLayers; ++i)
-		_layers[i].Grad = !_layers[i].Delta * _layers[i - 1].Axons;
+	CalcGradDelta(test);
 }
 
 NeuroNet::Matrix2d NeuroNet::NeuralNetwork::GetOut() const

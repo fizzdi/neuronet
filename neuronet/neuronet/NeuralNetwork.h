@@ -26,9 +26,9 @@ namespace NeuroNet
 		LearningType _learn;
 		std::vector<Matrix2d> LastDeltaSum;
 		std::vector<Matrix2d> LastGradSum;
+		int _countlayers = (int)_layers.size();
 	public:
 		std::vector<Problem> TrainingSet;
-		double Xmin, Xmax, Ymin, Ymax;
 
 		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction, LearningType Learn);
 		void Run(Problem test);
@@ -40,6 +40,7 @@ namespace NeuroNet
 		void ResilientPropagation(Problem& test);
 		void ResilientPropagation(std::vector<Matrix2d> PrevSumGrad, std::vector<Matrix2d> SumGrad, std::vector<Matrix2d> PrevSumDelta, std::vector<Matrix2d> SumDelta);
 		void BackPropagation(Problem& test);
+		void CalcGradDelta(Problem& test);
 
 
 		Matrix2d GetOut() const;
