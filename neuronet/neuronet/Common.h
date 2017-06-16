@@ -4,6 +4,6 @@ namespace NeuroNet
 {
 	class Common {
 	public :
-		static double getRand(double vmin, double vmax);
+		static double getRand(double vmin, double vmax, bool integer = false);
 	};
 }

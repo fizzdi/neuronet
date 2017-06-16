@@ -9,7 +9,7 @@ NeuroNet::Matrix2d NeuroNet::Layer::sigm_function(Matrix2d x)
 	Matrix2d res(n, m);
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < m; ++j)
-			res[i][j] = x[i][j] <= -35 ? x[i][j] = 10e-15 : 1.0 / (1.0 + exp(-x[i][j]));
+			res(i,j) = x(i, j) <= -35 ? x(i, j) = 10e-15 : 1.0 / (1.0 + exp(-x(i, j)));
 	return res;
 }
 
@@ -20,12 +20,12 @@ NeuroNet::Matrix2d NeuroNet::Layer::tanh_function(Matrix2d x)
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < m; ++j)
 		{
-			//res[i][j] = (exp(2 * x[i][j]) - 1.0) / (exp(2 * x[i][j]) + 1.0);
-			res[i][j] = std::tanh(x[i][j]);
-			auto ex = exp(2 * x[i][j]);
-			auto ttt = std::tanh(x[i][j]);
+			//res(i,j) = (exp(2 * x(i,j)) - 1.0) / (exp(2 * x(i,j)) + 1.0);
+			res(i, j) = std::tanh(x(i, j));
+			auto ex = exp(2 * x(i,j));
+			auto ttt = std::tanh(x(i,j));
 			std::ostringstream ss;
-			ss << res[i][j];
+			ss << res(i,j);
 			auto a = ss.str();
 			ss.str("");
 			//ss.clear();
@@ -47,7 +47,7 @@ NeuroNet::Matrix2d NeuroNet::Layer::diff_tanh_function(Matrix2d x)
 	Matrix2d res(n, m);
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < m; ++j)
-			res[i][j] = 1.0 - x[i][j] * x[i][j];
+			res(i,j) = 1.0 - x(i,j) * x(i,j);
 	return res;
 }
 
@@ -57,7 +57,7 @@ NeuroNet::Matrix2d NeuroNet::Layer::diff_sigm_function(Matrix2d x)
 	Matrix2d res(n, m);
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < m; ++j)
-			res[i][j] = (1.0 - x[i][j]) * x[i][j];
+			res(i,j) = (1.0 - x(i,j)) * x(i,j);
 	return res;
 }
 
@@ -140,29 +140,29 @@ void NeuroNet::Layer::NguenWidrow(double Xmin, double Xmax, double Ymin, double 
 	{
 		double mvij = 0.0;
 		for (int j = 0; j < Weights.GetHorizontalSize(); ++j)
-			mvij += Weights[i][j] * Weights[i][j];
+			mvij += Weights(i,j) * Weights(i,j);
 		mvij = std::sqrt(mvij);
 		if (mvij == 0) mvij = 1;
 
 		for (int j = 0; j < Weights.GetHorizontalSize(); ++j)
 		{
-			Weights[i][j] *= beta / mvij;
+			Weights(i,j) *= beta / mvij;
 		}
-		Bias[0][i] = NeuroNet::Common::getRand(-beta, beta);
+		Bias(0,i) = NeuroNet::Common::getRand(-beta, beta);
 	}
 
 	double x = 0.5*(Xmax - Xmin), y = 0.5*(Xmax + Xmin);
 	Weights = Weights*x; Bias = Bias*x + y;
 	Matrix2d a(1, Weights.GetHorizontalSize()), c(1, Weights.GetHorizontalSize());
 	for (int j = 0; j < Weights.GetHorizontalSize(); j++) {
-		a[0][j] = 2.0 / (Ymax - Ymin);
-		c[0][j] = 1.0 - Ymax*a[0][j];
+		a(0,j) = 2.0 / (Ymax - Ymin);
+		c(0,j) = 1.0 - Ymax*a(0, j);
 	}
 	Bias = !(Weights*!c + !Bias);
 
 	for (int j = 0; j < Weights.GetVerticalSize(); j++)
 		for (int k = 0; k < Weights.GetHorizontalSize(); k++)
-			Weights[j][k]*=a[0][k];
+			Weights(j, k) *=a(0, k);
 }
 
 
