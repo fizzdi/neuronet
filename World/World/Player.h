@@ -2,10 +2,10 @@
 
 #include "Element.h"
 #include "World.h"
+#include "Global.h"
 #include <vector>
 
 class World;
-
 class  __declspec (dllexport) Player : public Element {
 	friend class World;
 private:

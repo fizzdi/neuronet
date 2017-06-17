@@ -24,11 +24,11 @@ DWORD WINAPI DoMove(LPVOID lpParam) {
 }
 
 void World::Run() {
-	//debugout << "Loading map" << endl;
+	debugout << "Loading map" << endl;
 	LoadMap("maps\\map.txt");
-	//debugout << "Map is loaded" << endl;
+	debugout << "Map is loaded" << endl;
 	LoadPlayers();
-	//debugout << "Players are loaded" << endl;
+	debugout << "Players are loaded" << endl;
 	GenerateBonuses();
 	//debugout << "Bonuses are generated" << endl;
 	RenderFull();
@@ -181,9 +181,9 @@ void World::LoadPlayers() {
 
 	for (int i = 0; i < PlayerFiles.size(); ++i) {
 		auto hLib = LoadLibrary((L"players\\" + PlayerFiles[i]).c_str());
-		////debugout << "Loading library: " << PlayerFiles[i] << endl;
+		debugout << "Loading library: " << PlayerFiles[i] << endl;
 		if (hLib != NULL) {
-			////debugout << "Player library is loaded" << endl;
+			debugout << "Player library is loaded" << endl;
 			auto GetMyPlayer = (GetMyPlayerFunction)GetProcAddress((HMODULE)hLib, "GetMyPlayer");
 			if (GetMyPlayer != NULL) {
 				Player *NewPlayer = GetMyPlayer();
@@ -195,7 +195,9 @@ void World::LoadPlayers() {
 				NewPlayer->SetFullness(300);
 				NewPlayer->SetHealth(1000);
 				NewPlayer->SetColor(Colors[i]);
+				debugout << "Player " << PlayerFiles[i] << " library begin init" << endl;
 				NewPlayer->Init();
+				debugout << "Player " << PlayerFiles[i] << " library after init" << endl;
 				NewPlayer->Idx = i;
 				NewPlayer->PlayerLib = hLib;
 				Players.push_back(NewPlayer);

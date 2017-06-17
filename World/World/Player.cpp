@@ -5,6 +5,8 @@
 using namespace std;
 #define M_PI       3.14159265358979323846   // pi
 
+
+
 void Player::Render(LPDIRECT3DDEVICE9 d3ddev) {
 	RenderCircle(d3ddev, GetX(), GetY(), GetR(), Color);
 }
@@ -40,6 +42,7 @@ double Player::GetDistanceTo(Element *SomeObject) {
 }
 
 void Player::MoveTo(int ToX, int ToY) {
+	//if (ToX < 0 || ToY < 0 || ToX > GetWorld()->GetWidth() || ToY > GetWorld()->GetHeight()) return;
 	if (ToX < 0 || ToY < 0 || ToX > GetWorld()->GetWidth() || ToY > GetWorld()->GetHeight()) return;
 	if (GetX() == ToX && GetY() == ToY) return;
 	double AngleTo = GetAngleTo(ToX, ToY);
@@ -84,6 +87,7 @@ void Player::StepForward()
 {
 	int x = 50.0 * cos(Angle);
 	int y = 50.0 * sin(Angle);
+	debugout << GetX() << " " << GetY() << " -> " << x << " " << y << " " << Angle << endl;
 	MoveTo(x, y);
 }
 

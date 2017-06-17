@@ -10,12 +10,8 @@ const double GAMMA = 0.99;
 const double LAMBDA = 0.5;
 double r;
 double Q;
-double lastQ;
-
-//Neural config
-const int INPUT_NEURON_COUNT = 1000;
-const int HIDDEN_NEURON_COUNT = 2000;
-const int OUTPUT_NEURON_COUNT = 1;
+double lastQ = 0.0;
+int lastAction = 0;
 
 //World config
 const int PARAMS_COUNT = 3; //HEALTH, FULLNESS, ANGLE
@@ -25,6 +21,13 @@ const int TRAP_COUNT = 0;
 const int CORNUCOPIA_COUNT = 0;
 const int BLOCK_COUNT = 0;
 const int PLAYER_COUNT = 1;
+
+//Neural config
+const int INPUT_NEURON_COUNT = PARAMS_COUNT + (PLAYER_COUNT + FOOD_COUNT)*2;
+const int HIDDEN_NEURON_COUNT = 100;
+const int OUTPUT_NEURON_COUNT = 1;
+
+
 
 namespace NeuroNet
 {
@@ -125,7 +128,7 @@ namespace NeuroNet
 		std::vector<Layer> _layers;
 		std::vector<Matrix2d> LastDeltaSum;
 		std::vector<Matrix2d> LastGradSum;
-		int _countlayers = (int)_layers.size();
+		int _countlayers;
 	public:
 		ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
 		std::vector<Problem> TrainingSet;
@@ -699,10 +702,14 @@ namespace NeuroNet
 	void ElmanNetwork::MCQLCorrect()
 	{
 		for (int i = 1; i <= _countlayers; ++i)
-		{
 			_layers[i].Weights += eligibility[i] * ALPHA*(r + GAMMA*Q - lastQ);
-			eligibility[i] = _layers[i].Grad + eligibility[i]*GAMMA*LAMBDA;
-		}
+
+		std::vector<double> out;
+		out.push_back(Q);
+		CalcGradDelta(out);
+
+		for (int i = 1; i <= _countlayers; ++i)
+			eligibility[i] = _layers[i].Grad + eligibility[i] * GAMMA*LAMBDA;
 	}
 
 	Matrix2d ElmanNetwork::GetOut() const
@@ -755,6 +762,7 @@ namespace NeuroNet
 
 		LastDeltaSum.resize(3);
 		LastGradSum.resize(3);
+		eligibility.resize(3);
 		for (int i = 0; i < 3; ++i)
 		{
 			LastGradSum[i].Init(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
@@ -772,7 +780,7 @@ namespace NeuroNet
 	{
 		//init input layer
 		for (int i = 0; i < (int)input.GetHorizontalSize(); ++i)
-			_layers[0].States(0, i) = input(0,i);
+			_layers[0].States(0, i) = input(0, i);
 		_layers[0].CalculateAxons();
 
 		//init hidden and output layers
@@ -788,14 +796,30 @@ namespace NeuroNet
 	}
 }
 
-enum Actions {FORWARD, BACKWARD, LEFTSTEP, RIGHTSTEP, COUNT};
+enum Actions { FORWARD, BACKWARD, LEFTSTEP, RIGHTSTEP, COUNT };
 
 void DoAction(MyPlayer* me, Actions action)
 {
 	switch (action)
 	{
 	case Actions::FORWARD:
-		me->
+		me->StepForward();
+		break;
+
+	case Actions::BACKWARD:
+		me->StepBackward();
+		break;
+
+	case Actions::LEFTSTEP:
+		me->StepLeft();
+		break;
+
+	case Actions::RIGHTSTEP:
+		me->StepRight();
+		break;
+
+	default:
+		break;
 	}
 }
 
@@ -804,45 +828,68 @@ vector<NeuroNet::ElmanNetwork> nets;
 void MyPlayer::Init()
 {
 	SetName(L"NeuroPlayer");
-	nets.resize(Actions::COUNT, NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM));
 }
 
-void MyPlayer::Move() 
+bool FirstStep = true;
+bool InitFlag = true;
+void MyPlayer::Move()
 {
+	if (InitFlag)
+	{
+		nets.resize(Actions::COUNT, NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM));
+		InitFlag = false;
+	}
 	//Input order: My coordinates, Health, Fullness, Angle, Food coordinates, Enemy coordinates, Trap coordinates, Poison coordinates, Cornucopia coordinates, Block coordinates
-	NeuroNet::Matrix2d inputs(1, (FOOD_COUNT + POISON_COUNT + TRAP_COUNT + CORNUCOPIA_COUNT + BLOCK_COUNT + PLAYER_COUNT) * 2, -1.0);
+	NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT, -1.0);
 
+	/////////////////////////////////////////////////////////////////////
+	////////////////// Init input vector ////////////////////////////////
 	inputs(0, 0) = GetX();
 	inputs(0, 1) = GetY();
 	inputs(0, 2) = GetHealth();
 	inputs(0, 3) = GetFullness();
+	inputs(0, 4) = GetAngle();
 
 	auto World = GetWorld();
 	auto Food = World->GetFood();
 	for (int i = 0; i < min((int)Food.size(), FOOD_COUNT); ++i)
 	{
-		inputs(0, 4 + 2 * i) = Food[i]->GetX();
-		inputs(0, 4 + 2 * i + 1) = Food[i]->GetY();
+		inputs(0, 5 + 2 * i) = Food[i]->GetX();
+		inputs(0, 5 + 2 * i + 1) = Food[i]->GetY();
 	}
+	/////////////////////////////////////////////////////////////////////
 
-	double maxQ = -1e10;
+	Q = -1e10;
 	int action = -1;
 	for (int i = 0; i < nets.size(); ++i)
 	{
 		nets[i].Run(inputs);
 		double curQ = nets[i].GetOut().sum();
-		if (maxQ < curQ)
+		if (Q < curQ)
 		{
-			maxQ = curQ;
+			Q = curQ;
 			action = i;
 		}
 	}
 
-	net[action].
+	if (!FirstStep)
+	{
+
+		//nets[action].MCQLCorrect();
+		//nets[action].CalcGradDelta({ Q });
+	}
+
+	DoAction(this, (Actions)action);
+
+	lastAction = action;
+	lastQ = Q;
 }
+
 
 int main()
 {
-
+	MyPlayer *a = new MyPlayer();
+	a->Init();
+	a->Move();
 	return 0;
 }
