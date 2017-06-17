@@ -151,7 +151,6 @@
     <ClCompile Include="Layer.cpp" />
     <ClCompile Include="Matrix2d.cpp" />
     <ClCompile Include="NeuralNetwork.cpp" />
-    <ClCompile Include="Neuron.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -160,7 +159,6 @@
     <ClInclude Include="Layer.h" />
     <ClInclude Include="Matrix2d.h" />
     <ClInclude Include="NeuralNetwork.h" />
-    <ClInclude Include="Neuron.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="debug.txt" />

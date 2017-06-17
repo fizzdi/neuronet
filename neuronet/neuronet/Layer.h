@@ -1,5 +1,4 @@
 #pragma once
-#include "Neuron.h"
 #include "Matrix2d.h"
 #include <vector>
 namespace NeuroNet
