@@ -7,7 +7,7 @@
 #include <iomanip>
 using namespace std;
 const int TestCount = 10000;
-const int HiddenNeuron = 10; //sin - 11 15
+const int HiddenNeuron = 500; //sin - 11 15
 const int SampleCount = 10;
 const int MaxEpoch = 10000;
 const double MinMSE = 1e-7;
@@ -31,7 +31,7 @@ int main()
 	srand((unsigned)time(NULL));
 
 	bool failed = false;
-	net.Init(6, 6, HiddenNeuron, NeuroNet::SIGM, NeuroNet::RPROP);
+	net.Init(10, 10, HiddenNeuron, NeuroNet::SIGM, NeuroNet::RPROP);
 	/*for (int i = 1; i <= SampleCount; ++i)
 	{
 		//double x = NeuroNet::Common::getRand(0, 15, true);
@@ -40,15 +40,6 @@ int main()
 		double y = testfun(x);
 		net.TrainingSet.push_back(NeuroNet::Problem({ x }, { y }));
 	}*/
-
-	// 0 3 5 2 1 0
-	//											  0  1  2  3  4  5		0  1  2  3  4  5
-	net.TrainingSet.push_back(NeuroNet::Problem({ 1, 0, 0, 0, 0, 0 }, { 0, 0, 0, 1, 0, 0 }));
-	net.TrainingSet.push_back(NeuroNet::Problem({ 0, 0, 0, 1, 0, 0 }, { 0, 0, 0, 0, 0, 1 }));
-	net.TrainingSet.push_back(NeuroNet::Problem({ 0, 0, 0, 0, 0, 1 }, { 0, 0, 1, 0, 0, 0 }));
-	net.TrainingSet.push_back(NeuroNet::Problem({ 0, 0, 1, 0, 0, 0 }, { 0, 1, 0, 0, 0, 0 }));
-	net.TrainingSet.push_back(NeuroNet::Problem({ 0, 1, 0, 0, 0, 0 }, { 1, 0, 0, 0, 0, 0 }));
-
 
 	cout.flush();
 	double lstError = 0.0;
@@ -119,7 +110,7 @@ int main()
 */
 
 		cout << fixed << setprecision(6);
-		vector<double> inputs(6), outputs(6);
+		vector<double> inputs(10), outputs(10);
 		for (int test = 0; test < TestCount; ++test)
 		{
 			int x = 0;
@@ -132,21 +123,21 @@ int main()
 			do
 			{
 				auto res = net.GetOut();
-				for (int i = 0; i < 6; ++i)
+				for (int i = 0; i < 10; ++i)
 				{
 					cout << setw(10) << res(0, i) << " ";
-					if (res(0, i) >= 0.3)
+					if (res(0, i) >= 0.4)
 						predicted = i;
 				}
 				cout << " <- " << predicted << endl;
 
-				x = rand() % 6;
+				x = rand() % 10;
 				index++;
-				if (index == 5)
+				if (index == 10)
 					stop = true;
 				else cout << "(" << x << ") ";
 
-				for (int i = 0; i < 6; ++i)
+				for (int i = 0; i < 10; ++i)
 				{
 					if (i == x) {
 						inputs[i] = 1.0;
@@ -165,14 +156,14 @@ int main()
 				net.Run(NeuroNet::Problem(inputs, outputs));
 			} while (!stop);
 
-			if ((index > 4) && (successful == true)) {
+			if ((index > 9) && (successful == true)) {
 				cout << "Success." << endl;
 				cout << "Completed " << test << " tests." << endl;
 				stop = true;
 				break;
 			}
 			else {
-				cout << "Failed." << endl;
+				cout << "Failed." << endl << endl;
 				if (test > TestCount) {
 					stop = true;
 					cout << "Completed " << test << " tests with no success." << endl;
