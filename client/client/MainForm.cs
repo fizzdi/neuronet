@@ -15,6 +15,7 @@ namespace client
 {
     public partial class MainForm : Form
     {
+        //[DllImport("kernel32.dll", EntryPoint = "LoadLibrary", SetLastError = true)]
         [DllImport("kernel32.dll")]
         public static extern IntPtr LoadLibrary(string dllToLoad);
         [DllImport("kernel32.dll")]
@@ -27,7 +28,7 @@ namespace client
         ServerConfig cfg;
         public User currentUser;
         Dictionary<string, int> Bots = new Dictionary<string, int>();
-        Dictionary<int,Submit> submits;
+        Dictionary<int, Submit> submits;
 
         public MainForm()
         {
@@ -50,7 +51,7 @@ namespace client
 
             server = new Server(cfg);
             //server.connect();
-           // server.addBots(lb_local_bots);
+            // server.addBots(lb_local_bots);
             world.server = server;
         }
 
@@ -91,8 +92,8 @@ namespace client
         {
             dgv_history.Rows.Clear();
             submits = server.getSubmits(currentUser.ID);
-            foreach(var cur in submits)
-            dgv_history.Rows.Add(dgv_history.RowCount + 1, cur.Value.Number, cur.Value.Status, "Посмотреть");
+            foreach (var cur in submits)
+                dgv_history.Rows.Add(dgv_history.RowCount + 1, cur.Value.Number, cur.Value.Status, "Посмотреть");
         }
 
         private void dgv_history_Resize(object sender, EventArgs e)
@@ -127,7 +128,7 @@ namespace client
 
         private void b_localRight_Click(object sender, EventArgs e)
         {
-            if (lb_local_bots.SelectedIndex == -1)
+          /*  if (lb_local_bots.SelectedIndex == -1)
             {
                 //Добавление стратегии игрока
                 lb_local_selectedStrategy.Items.Add(lb_local_myStrategy.SelectedItem);
@@ -150,7 +151,7 @@ namespace client
             if (lb_local_selectedStrategy.Items.Count == 4)
             {
                 b_local_right.Enabled = false;
-            }
+            }*/
         }
 
         private void lb_myStrategy_Click(object sender, EventArgs e)
@@ -165,7 +166,7 @@ namespace client
 
         private void b_localLeft_Click(object sender, EventArgs e)
         {
-            int curSelected = lb_local_selectedStrategy.SelectedIndex;
+            /*int curSelected = lb_local_selectedStrategy.SelectedIndex;
 
             lb_local_selectedStrategy.Items.RemoveAt(lb_local_selectedStrategy.SelectedIndex);
 
@@ -175,28 +176,28 @@ namespace client
                 b_local_left.Enabled = false;
             }
             else
-                lb_local_selectedStrategy.SelectedIndex = Math.Min(curSelected, lb_local_selectedStrategy.Items.Count - 1);
+                lb_local_selectedStrategy.SelectedIndex = Math.Min(curSelected, lb_local_selectedStrategy.Items.Count - 1);*/
         }
 
         private void lb_myStrategy_SelectedIndexChanged(object sender, EventArgs e)
         {
-            b_local_right.Enabled = lb_local_selectedStrategy.Items.Count != 4 && !(lb_local_myStrategy.SelectedIndex == -1 && lb_local_bots.SelectedIndex == lb_local_myStrategy.SelectedIndex);
+            //b_local_right.Enabled = lb_local_selectedStrategy.Items.Count != 4 && !(lb_local_myStrategy.SelectedIndex == -1 && lb_local_bots.SelectedIndex == lb_local_myStrategy.SelectedIndex);
         }
 
         private void lb_bots_SelectedIndexChanged(object sender, EventArgs e)
         {
-            b_local_right.Enabled = lb_local_selectedStrategy.Items.Count != 4 && !(lb_local_bots.SelectedIndex == -1 && lb_local_bots.SelectedIndex == lb_local_myStrategy.SelectedIndex);
+            //b_local_right.Enabled = lb_local_selectedStrategy.Items.Count != 4 && !(lb_local_bots.SelectedIndex == -1 && lb_local_bots.SelectedIndex == lb_local_myStrategy.SelectedIndex);
         }
 
         private void lb_selectedStrategy_SelectedIndexChanged(object sender, EventArgs e)
         {
-            b_local_left.Enabled = lb_local_selectedStrategy.SelectedIndex != -1;
-            lb_local_myStrategy.SelectedIndex = lb_local_bots.SelectedIndex = -1;
+           // b_local_left.Enabled = lb_local_selectedStrategy.SelectedIndex != -1;
+          //  lb_local_myStrategy.SelectedIndex = lb_local_bots.SelectedIndex = -1;
         }
 
         private void b_localRun_Click(object sender, EventArgs e)
         {
-            foreach (string cur in lb_local_selectedStrategy.Items)
+            /*foreach (string cur in lb_local_selectedStrategy.Items)
             {
                 if (!Char.IsDigit(cur[0]))
                     world.addBots(cur);
@@ -204,7 +205,7 @@ namespace client
                 {
                     world.addPlayers(int.Parse(cur));
                 }
-            }
+            }*/
             world.start();
         }
 
@@ -255,7 +256,7 @@ namespace client
 
             if (lb_global_selectedStrategy.Items.Count == 4)
             {
-                b_global_right.Enabled = false;
+                //b_global_right.Enabled = false;
             }
         }
 
@@ -295,14 +296,14 @@ namespace client
             List<int> submits = new List<int>();
             foreach (string cur in lb_global_selectedStrategy.Items)
             {
-                world.addPlayers(int.Parse(cur.Substring(cur.IndexOf('#')+1)));
+                world.addPlayers(int.Parse(cur.Substring(cur.IndexOf('#') + 1)));
             }
             world.start();
         }
 
         private void tabcontrol_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (tabcontrol.SelectedTab == tab_local_run)
+           /* if (tabcontrol.SelectedTab == tab_local_run)
             {
                 lb_local_bots.Items.Clear();
                 server.addBots(lb_local_bots);
@@ -313,9 +314,9 @@ namespace client
             if (tabcontrol.SelectedTab == tab_global_run)
             {
                 lb_global_otherStrategy.Items.Clear();
-                server.addOtherPlayersSubmits(currentUser.ID,lb_global_otherStrategy);
+                server.addOtherPlayersSubmits(currentUser.ID, lb_global_otherStrategy);
                 lb_global_myStrategy.Items.Clear();
-                lb_global_myStrategy.Items.AddRange(server.getSubmits(currentUser.ID).Values.Where(t => t.Status != "Compile Error").OrderByDescending(t => t.Number).Select(t => currentUser.TeamName + "#"+t.Number.ToString()).ToArray());
+                lb_global_myStrategy.Items.AddRange(server.getSubmits(currentUser.ID).Values.Where(t => t.Status != "Compile Error").OrderByDescending(t => t.Number).Select(t => currentUser.TeamName + "#" + t.Number.ToString()).ToArray());
             }
 
             if (tabcontrol.SelectedTab == tab_history)
@@ -326,7 +327,7 @@ namespace client
             if (tabcontrol.SelectedTab == tab_settings)
             {
                 tb_GroupName.Text = currentUser.TeamName;
-            }
+            }*/
         }
 
         private void b_save_settings_Click(object sender, EventArgs e)
@@ -346,9 +347,20 @@ namespace client
             server.ChangeTeamName(currentUser, tb_GroupName.Text);
         }
 
+
         private void button1_Click(object sender, EventArgs e)
         {
-            LoadLibrary("solve_compiller.dll");
+            var lib = LoadLibrary("solve_compiller.dll");
+
+            using (StreamWriter wr = new StreamWriter("dlldebug.txt"))
+            {
+                if (lib == IntPtr.Zero)
+                    wr.WriteLine(Marshal.GetLastWin32Error()); // Error Code while loading DLL
+                else
+                    wr.WriteLine("Yes " + lib);  // Loading done !
+            }
+                if (lib != IntPtr.Zero)
+                    FreeLibrary(lib);
         }
     }
 }

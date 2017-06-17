@@ -5,28 +5,32 @@
 #include "global.h"
 
 using namespace std;
+wofstream debugout("debug.txt");
 DWORD WINAPI DoAll(LPVOID lpParam);
 
 HINSTANCE  inj_hModule;          //Injected Modules Handle
 HWND       hWnd;            //Window Handle
 
-wofstream debugout("debug.txt");
 
-bool CompileSolution(int CurrentThreadIdx, char CompileCommand[]);
-char CurDir[MAX_STR_LEN];
+bool CompileSolution(char CompileCommand[]);
 bool PerformCompilation();
 void Compile();
+char CurDir[MAX_STR_LEN];
+#define DIRECTXPATH "C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)"
+#define MVSVERSION "11.0"
+#define OUTDIR "players"
 
 DWORD WINAPI DoAll(LPVOID lpParam)
 {
 	try {
-		debugout << "yes" << endl;
+		debugout << "Start Compile" << endl;
 		Compile();
+		debugout << "End Compile" << endl;
 	}
 	catch (...) {
-		debugout << "Clean D3D - exception" << endl;
-		return 1;
+		debugout << "Exception" << endl;
 	}
+	return 1;
 	return 1;
 }
 
@@ -131,27 +135,18 @@ bool CompileSolution(char CompileCommand[]) {
 bool PerformCompilation() {
 	char CurrentCmd[MAX_STR_LEN];
 
-	string str = "\"C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\vcvarsall.bat\" & cl.exe /I\"C:\\DirectX\\Include\" /I\"" +
+	string str = "\"C:\\Program Files (x86)\\Microsoft Visual Studio " + string(MVSVERSION) + "\\VC\\vcvarsall.bat\" & cl.exe /I\"" + string(DIRECTXPATH) + "\\Include\" /I\"" +
 		string(CurDir) + "\\ForPlayerCompilation\" /D_USRDLL /D_WINDLL \"";
 
 	////////////////////////////////////////////// построение строки компиляции ///////////////////////////////////////////
-	sprintf_s(CurrentCmd, sizeof(CurrentCmd), "%s%s%s%s%s%s%s%s%s", 
+	sprintf_s(CurrentCmd, sizeof(CurrentCmd), "%s%s%s%s%s%s%s%s%s%s%s%s%s",
 		str.c_str(), CurDir, "\\H.cpp\" \"", CurDir, "\\ForPlayerCompilation\\MyPlayerExport.cpp\" /link /DLL /OUT:\"",
-			CurDir, "\\H.dll\" /MACHINE:X86 /SUBSYSTEM:WINDOWS /LIBPATH:C:\\DirectX\\Lib\\x86 /libpath:", CurDir, "\\ForPlayerCompilation /TLBID:1");
+		CurDir, "\\", OUTDIR, "\\H.dll\" /MACHINE:X86 /SUBSYSTEM:WINDOWS /LIBPATH:\"", DIRECTXPATH, "\\Lib\\x86\" /libpath:\"", CurDir, "\\ForPlayerCompilation\" /TLBID:1 /MD");
 	debugout << CurrentCmd << endl;
 
 	if (!CompileSolution(CurrentCmd)) {
 		debugout << "Internal tester error" << endl;
 		return false;
-	}
-	else {
-		ifstream ff(string(CurDir) + "\\H.dll");
-		if (!ff)
-		{
-			debugout << "Update result SQL query error" << endl;
-			return false;
-		}
-		debugout << "Update result SQL query error" << endl;
 	}
 	return true;
 }

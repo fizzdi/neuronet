@@ -280,7 +280,7 @@
             // b_localRun
             // 
             this.b_localRun.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.b_localRun.Enabled = false;
+            this.b_localRun.Enabled = true;
             this.b_localRun.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.b_localRun.Location = new System.Drawing.Point(207, 264);
             this.b_localRun.Name = "b_localRun";
