@@ -4,6 +4,12 @@
 
 namespace NeuroNet
 {
+	const double alpha = 2.0;
+	const double gamma = 0.99;
+	const double lambda = 0.5;
+	double r;
+	double Q;
+	double lastQ;
 	//activation function type
 	enum AFType { LINE, SIGM, TANH };	
 
@@ -103,7 +109,7 @@ namespace NeuroNet
 		int _countlayers = (int)_layers.size();
 	public:
 		std::vector<Problem> TrainingSet;
-
+		double eligibility = 0.0;
 		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
 		void Run(Problem test);
 		double RunTrainingSetOffline(bool print = false);
@@ -111,6 +117,8 @@ namespace NeuroNet
 		void PrintProblemResult(Problem& test);
 		void ResilientPropagation(std::vector<Matrix2d> PrevSumGrad, std::vector<Matrix2d> SumGrad, std::vector<Matrix2d> PrevSumDelta, std::vector<Matrix2d> SumDelta);
 		void CalcGradDelta(Problem& test);
+		Matrix2d GetOutputGrad();
+		void MCQLCorrect();
 
 		Matrix2d GetOut() const;
 		friend std::ostream& operator<< (std::ostream &os, ElmanNetwork &net);
@@ -648,6 +656,19 @@ namespace NeuroNet
 
 		for (int i = 1; i < _countlayers; ++i)
 			_layers[i].Grad = !_layers[i].Delta * _layers[i - 1].Axons;
+	}
+
+	Matrix2d ElmanNetwork::GetOutputGrad()
+	{
+		return _layers.back().Grad;
+	}
+
+	void ElmanNetwork::MCQLCorrect()
+	{
+		for (int i = 1; i < _countlayers; ++i)
+		{
+			_layers[i].Weights += alpha*(r + gamma*Q - lastQ)*eligibility;
+		}
 	}
 
 	Matrix2d ElmanNetwork::GetOut() const
