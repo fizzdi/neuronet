@@ -95,7 +95,7 @@ void World::Run() {
 			}
 		}
 		UpdateBonuses();
-		RenderFull();
+		Render();
 	}
 	RenderResults();
 }

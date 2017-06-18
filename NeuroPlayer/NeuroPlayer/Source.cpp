@@ -31,7 +31,7 @@ const int PLAYER_COUNT = 1;
 
 //Neural config
 const int SENSOR_COUNT = 8;
-const int INPUT_NEURON_COUNT = SENSOR_COUNT*2;
+const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
 const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT * 1.5;
 const int OUTPUT_NEURON_COUNT = 1;
 
@@ -579,7 +579,7 @@ namespace NeuroNet
 			GradSum[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
 			DeltaSum[i] = Matrix2d(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
 		}
-		int TestCount = 10;
+		int TestCount = 30;
 
 		for (int i = min((int)TrainingSet.size() - 1, TestCount); i >= 0; --i)
 		{
@@ -927,6 +927,7 @@ void DoAction(MyPlayer* me, Actions action)
 
 bool FirstStep = true;
 vector<NeuroNet::ElmanNetwork> nets;
+//NeuroNet::ElmanNetwork net;
 void MyPlayer::Init()
 {
 	SetName(L"NeuroPlayer");
@@ -935,9 +936,10 @@ void MyPlayer::Init()
 	for (int i = 0; i < nets.size(); ++i)
 	{
 		debug << "net " << i << endl;
-		nets[i].Init(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
+		nets[i].Init(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM);
 		debug << "net " << i << "inited" << endl << endl;
 	}
+	//net.Init(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
 }
 
 bool check(Element *player, Element *elem, double angle, double step_angle)
@@ -975,7 +977,7 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 	vector<pair<double, ElementType>> sensors(eyes, make_pair(DBL_MAX, ElementType::TCOUNT));
 	double dist;
 	int eye = 0;
-	while (angle < 2*M_PI)
+	while (angle < 2 * M_PI)
 	{
 		double min_dist = DBL_MAX;
 		ElementType cur_type = ElementType::TBLOCK;
@@ -1013,9 +1015,9 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 		//x = getw
 		dist = min(getDistanceOnWall(w->GetWidth(), k*w->GetWidth() + y0, me, angle), dist);
 		//y = 0;
-		dist = min(getDistanceOnWall(-y0/k, 0, me, angle), dist);
+		dist = min(getDistanceOnWall(-y0 / k, 0, me, angle), dist);
 		//y = geth;
-		dist = min(getDistanceOnWall((w->GetHeight() -y0) / k, w->GetHeight(), me, angle), dist);
+		dist = min(getDistanceOnWall((w->GetHeight() - y0) / k, w->GetHeight(), me, angle), dist);
 		if (dist < min_dist)
 		{
 			min_dist = dist;
@@ -1023,7 +1025,7 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 		}
 
 		inputs(0, eye) = min_dist;
-		inputs(0, eye+1) = cur_type;
+		inputs(0, eye + 1) = cur_type;
 
 		eye += 2;
 		angle += step_angle;
@@ -1041,45 +1043,55 @@ void MyPlayer::Move()
 	///////////////////////// Init input vector /////////////////////////
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
-	
+
 	r = GetHealth() * GetFullness() * 1.0 / 300000;
-	debug << "R = " << r << endl;
+
 	int action = -1;
+	int rnd = rand();
+	debug << "RAND: " << rnd;
 	if (!FirstStep)
 	{
 		//nets[lastAction].MCQLCorrect();
 		//nets[lastAction].CalcGradDelta(r);
 		//nets[lastAction].AddTest(vector<double>(1, r));
+		int Epoch = 10;
 		for (int i = 0; i < Actions::COUNT; ++i)
 		{
 			nets[i].AddTest(vector<double>(1, r));
-			int Epoch = 20;
-			while (Epoch--)
+			/*while (Epoch--)
 			{
-				if (nets[i].RunTrainingSetOffline() < 1e-2)
-					break;
-			}
+			if (nets[i].RunTrainingSetOffline() < 1e-2)
+			break;
+			}*/
 		}
-		/*int Epoch = 20;
 		while (Epoch--)
 		{
 			if (nets[lastAction].RunTrainingSetOffline() < 1e-2)
 				break;
-		}*/
+		}
 	}
 
-	Q = -DBL_MAX;
-	for (int i = 0; i < nets.size(); ++i)
+	debug << "R = " << r << endl;
+	if (rnd % 2 != 0)
 	{
-		nets[i].Run(inputs);
-		double curQ = nets[i].GetOut().sum();
-		debug << curQ << " " << i << endl;
 
-		if (Q < curQ)
+		Q = -DBL_MAX;
+		for (int i = 0; i < nets.size(); ++i)
 		{
-			Q = curQ;
-			action = i;
+			nets[i].Run(inputs);
+			double curQ = nets[i].GetOut().sum();
+			debug << curQ << " " << i << endl;
+
+			if (Q < curQ)
+			{
+				Q = curQ;
+				action = i;
+			}
 		}
+	}
+	else
+	{
+		action = rnd % Actions::COUNT;
 	}
 	debug << "SELECT " << Q << " " << action << endl;
 
