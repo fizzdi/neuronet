@@ -95,6 +95,8 @@ namespace NeuroNet
 			inputs = input;
 			outputs = output;
 		}
+		Problem()
+		{};
 	};
 
 	class Layer
@@ -141,13 +143,17 @@ namespace NeuroNet
 		std::vector<Problem> TrainingSet;
 		std::vector<Matrix2d> eligibility;
 		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
+		//void Run();
 		void Run();
 		void Run(std::vector<double> input);
 		void Run(Matrix2d &input);
+		void AddTest(vector<double> ideal);
 		double RunTrainingSetOffline(bool print = false);
 		double CalculateError(Problem& test, bool print = false);
 		void PrintProblemResult(Problem& test);
+		void ResilientPropagation();
 		void ResilientPropagation(std::vector<Matrix2d> PrevSumGrad, std::vector<Matrix2d> SumGrad, std::vector<Matrix2d> PrevSumDelta, std::vector<Matrix2d> SumDelta);
+		void CalcGradDelta(double output);
 		void CalcGradDelta(std::vector<double> output);
 		void CalcGradDelta(Matrix2d &output);
 		Matrix2d& GetOutputGrad();
@@ -614,6 +620,58 @@ namespace NeuroNet
 		std::cout << std::endl;
 	}
 
+	void ElmanNetwork::ResilientPropagation()
+	{
+		const double EttaPlus = 1.2, EttaMinus = 0.5;
+		for (int i = 1; i < _countlayers; ++i)
+		{
+			for (int j = 0; j < _layers[i].Grad.GetVerticalSize(); ++j)
+			{
+				for (int k = 0; k < _layers[i].Grad.GetHorizontalSize(); ++k)
+				{
+					double cur_correct = 0.0;
+					double cur_mult = _layers[i].Grad(j, k) * _layers[i].LastGrad(j, k);
+					if (cur_mult == 0.0)
+						cur_correct = getRand(0, 1);
+					else if (cur_mult > 0.0)
+						cur_correct = min(EttaPlus * _layers[i].CorrectVal(j, k), 50.0);
+					else if (cur_mult < 0.0)
+						cur_correct = max(EttaMinus * _layers[i].CorrectVal(j, k), 1e-6);
+
+					_layers[i].CorrectVal(j, k) = cur_correct;
+
+					if (_layers[i].Grad(j, k) == 0.0) continue;
+
+					if (_layers[i].Grad(j, k) > 0)
+						_layers[i].Weights(j, k) += -cur_correct;
+					else
+						_layers[i].Weights(j, k) += cur_correct;
+				}
+			}
+
+			for (int j = 0; j < _layers[i].Delta.GetHorizontalSize(); ++j)
+			{
+				double cur_correct = 0.0;
+				double cur_mult = _layers[i].Delta(0, j) * _layers[i].LastDelta(0, j);
+				if (cur_mult == 0.0)
+					cur_correct = getRand(0, 1);
+				else if (cur_mult > 0.0)
+					cur_correct = min(EttaPlus * _layers[i].BiasCorrectVal(0, j), 50.0);
+				else if (cur_mult < 0.0)
+					cur_correct = max(EttaMinus * _layers[i].BiasCorrectVal(0, j), 1e-6);
+
+				_layers[i].BiasCorrectVal(0, j) = cur_correct;
+
+				if (_layers[i].Delta(0, j) == 0.0) continue;
+
+				if (_layers[i].Delta(0, j) > 0)
+					_layers[i].Bias(0, j) += -cur_correct;
+				else
+					_layers[i].Bias(0, j) += cur_correct;
+			}
+		}
+	}
+
 	double ElmanNetwork::CalculateError(Problem & test, bool print)
 	{
 		//MSE
@@ -679,6 +737,11 @@ namespace NeuroNet
 					_layers[i].Bias(0, j) += cur_correct;
 			}
 		}
+	}
+
+	void ElmanNetwork::CalcGradDelta(double output)
+	{
+		CalcGradDelta(std::vector<double>(1, output));
 	}
 
 	void ElmanNetwork::CalcGradDelta(std::vector<double> outputs)
@@ -823,6 +886,12 @@ namespace NeuroNet
 
 		Run();
 	}
+	void ElmanNetwork::AddTest(vector<double> ideal)
+	{
+		TrainingSet.resize(TrainingSet.size() + 1);
+		TrainingSet.back().inputs = _layers[0].States;
+		TrainingSet.back().outputs = ideal;
+	}
 }
 
 enum Actions { FORWARD, BACKWARD, LEFTSTEP, RIGHTSTEP, COUNT };
@@ -869,8 +938,6 @@ void MyPlayer::Init()
 
 void MyPlayer::Move()
 {
-	int b = 1;
-	int a = 1 / (b == 0);
 	//Input order: My coordinates, Health, Fullness, Angle, Food coordinates, Enemy coordinates, Trap coordinates, Poison coordinates, Cornucopia coordinates, Block coordinates
 	NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT, -1.0);
 
@@ -893,8 +960,20 @@ void MyPlayer::Move()
 	r = GetHealth() * GetFullness() * 1.0 / 300000;
 	debug << "R = " << r << endl;
 	int action = -1;
+	if (!FirstStep)
+	{
+		//nets[lastAction].MCQLCorrect();
+		//nets[lastAction].CalcGradDelta(r);
+		//nets[lastAction].AddTest(vector<double>(1, r));
+		for (int i = 0; i < Actions::COUNT; ++i)
+		{
+			nets[lastAction].AddTest(vector<double>(1, Q));
+			//nets[lastAction].RunTrainingSetOffline();
+		}
+		nets[lastAction].RunTrainingSetOffline();
+	}
 
-	Q = -DBL_MAX;
+	/*Q = -DBL_MAX;
 	for (int i = 0; i < nets.size(); ++i)
 	{
 		nets[i].Run(inputs);
@@ -908,15 +987,11 @@ void MyPlayer::Move()
 			action = i;
 		}
 	}
-	debug << "SELECT " << Q << " " << action << endl;
-	if (!FirstStep)
-	{
-		nets[lastAction].MCQLCorrect();
-		//nets[lastAction].CalcGradDelta({ Q });
-	}
-	FirstStep = false;
+	debug << "SELECT " << Q << " " << action << endl;*/
+
 
 	DoAction(this, (Actions)action);
+	FirstStep = false;
 
 	lastAction = action;
 	lastQ = Q;

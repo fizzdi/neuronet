@@ -46,7 +46,7 @@ void World::Run() {
 					//debugout << "Run thread" << endl;
 					//debugout << "Coords: " << Players[j]->GetX() << " " << Players[j]->GetY() << endl;
 					auto PlayerThread = CreateThread(0, NULL, DoMove, (LPVOID)Players[j], NULL, NULL);
-					auto WaitResult = WaitForSingleObject(PlayerThread, 250);
+					auto WaitResult = WaitForSingleObject(PlayerThread, 5000);
 					DWORD PlayerExitCode = OK;
 					GetExitCodeThread(PlayerThread, &PlayerExitCode);
 					
@@ -195,9 +195,9 @@ void World::LoadPlayers() {
 				NewPlayer->SetFullness(300);
 				NewPlayer->SetHealth(1000);
 				NewPlayer->SetColor(Colors[i]);
-				debugout << "Player " << PlayerFiles[i] << " library begin init" << endl;
+				//debugout << "Player " << PlayerFiles[i] << " library begin init" << endl;
 				NewPlayer->Init();
-				debugout << "Player " << PlayerFiles[i] << " library after init" << endl;
+				//debugout << "Player " << PlayerFiles[i] << " library after init" << endl;
 				NewPlayer->Idx = i;
 				NewPlayer->PlayerLib = hLib;
 				Players.push_back(NewPlayer);
