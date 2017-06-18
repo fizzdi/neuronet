@@ -7,6 +7,7 @@
 #include <ctime>
 #include <exception>
 #include <climits>
+#include <omp.h>
 
 using namespace std;
 ofstream debug("neurodebug.txt");
@@ -29,8 +30,9 @@ const int BLOCK_COUNT = 0;
 const int PLAYER_COUNT = 1;
 
 //Neural config
-const int INPUT_NEURON_COUNT = PARAMS_COUNT + (PLAYER_COUNT + FOOD_COUNT) * 2;
-const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT + 100;
+const int SENSOR_COUNT = 8;
+const int INPUT_NEURON_COUNT = SENSOR_COUNT*2;
+const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT * 1.5;
 const int OUTPUT_NEURON_COUNT = 1;
 
 
@@ -308,6 +310,7 @@ namespace NeuroNet
 		int nm = GetHorizontalSize();
 		Matrix2d res(n, m);
 
+#pragma omp parallel for private(j,k,res._m[i][j])
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
 				for (int k = 0; k < nm; ++k)
@@ -576,17 +579,18 @@ namespace NeuroNet
 			GradSum[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
 			DeltaSum[i] = Matrix2d(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
 		}
-		int y = 0;
-		for each (Problem test in TrainingSet)
+		int TestCount = 10;
+
+		for (int i = min((int)TrainingSet.size() - 1, TestCount); i >= 0; --i)
 		{
-			Run(test.inputs);
-			CalcGradDelta(test.outputs);
+			Run(TrainingSet[TrainingSet.size() - i - 1].inputs);
+			CalcGradDelta(TrainingSet[TrainingSet.size() - i - 1].outputs);
 			for (int i = 1; i < 3; ++i)
 			{
 				GradSum[i] += _layers[i].Grad;
 				DeltaSum[i] += _layers[i].Delta;
 			}
-			if (print) PrintProblemResult(test);
+			if (print) PrintProblemResult(TrainingSet[TrainingSet.size() - i - 1]);
 		}
 		if (print) std::cout << std::endl << "=======CORRECT==========" << std::endl;
 
@@ -936,27 +940,108 @@ void MyPlayer::Init()
 	}
 }
 
+bool check(Element *player, Element *elem, double angle, double step_angle)
+{
+	double b = player->GetY() - elem->GetY();
+	double k = tan(angle);
+	double r = elem->GetR();
+	double x0 = elem->GetX();
+	double angleB = atan((player->GetY() - elem->GetY())*1.0 / (elem->GetX() - player->GetX()));
+	return (k*b - x0)*(k*b - x0) - (1.0 + k*k)*(x0*x0 + b*b - r*r) >= 0.0 && abs(angleB - angle) <= step_angle;
+}
+
+enum ElementType { TFOOD, TENEMY, TBLOCK, TCOUNT };
+
+double getDistanceOnWall(double x, double y, Player *me, double angle)
+{
+	double x0 = me->GetX();
+	double y0 = me->GetY();
+	double vx = x - x0;
+	double vy = y - y0;
+	double beamx = cos(angle) - x0;
+	double beamy = sin(angle) - y0;
+	//scalar product
+	if (vx*beamx + vy*beamy > 0.0)
+		return me->GetDistanceTo(x, y);
+	else return DBL_MAX;
+
+}
+
+void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
+{
+	const double step_angle = M_PI*2.0 / eyes;
+	double angle = 0.0;
+
+	vector<pair<double, ElementType>> sensors(eyes, make_pair(DBL_MAX, ElementType::TCOUNT));
+	double dist;
+	int eye = 0;
+	while (angle < 2*M_PI)
+	{
+		double min_dist = DBL_MAX;
+		ElementType cur_type = ElementType::TBLOCK;
+		//food
+		for each (auto cur in w->GetFood())
+		{
+			dist = me->GetDistanceTo(cur);
+			if (check(me, cur, angle, step_angle) && dist < min_dist)
+			{
+				min_dist = dist;
+				cur_type = ElementType::TFOOD;
+			}
+		}
+
+		//block
+		for each (auto cur in w->GetBlocks())
+		{
+			dist = me->GetDistanceTo(cur);
+			if (check(me, cur, angle, step_angle) && dist < min_dist)
+			{
+				min_dist = dist;
+				cur_type = ElementType::TBLOCK;
+			}
+		}
+
+		double x, y;
+		double x0 = me->GetX();
+		double y0 = me->GetY();
+		double k = tan(angle);
+		double angleB;
+
+		dist = DBL_MAX;
+		//x=0
+		dist = min(getDistanceOnWall(0, y0, me, angle), dist);
+		//x = getw
+		dist = min(getDistanceOnWall(w->GetWidth(), k*w->GetWidth() + y0, me, angle), dist);
+		//y = 0;
+		dist = min(getDistanceOnWall(-y0/k, 0, me, angle), dist);
+		//y = geth;
+		dist = min(getDistanceOnWall((w->GetHeight() -y0) / k, w->GetHeight(), me, angle), dist);
+		if (dist < min_dist)
+		{
+			min_dist = dist;
+			cur_type = ElementType::TBLOCK;
+		}
+
+		inputs(0, eye) = min_dist;
+		inputs(0, eye+1) = cur_type;
+
+		eye += 2;
+		angle += step_angle;
+	}
+
+
+}
+
 void MyPlayer::Move()
 {
 	//Input order: My coordinates, Health, Fullness, Angle, Food coordinates, Enemy coordinates, Trap coordinates, Poison coordinates, Cornucopia coordinates, Block coordinates
 	NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT, -1.0);
 
 	/////////////////////////////////////////////////////////////////////
-	////////////////// Init input vector ////////////////////////////////
-	inputs(0, 0) = GetX();
-	inputs(0, 1) = GetY();
-	inputs(0, 2) = GetHealth();
-	inputs(0, 3) = GetFullness();
-	inputs(0, 4) = GetAngle();
-
-	auto World = GetWorld();
-	auto Food = World->GetFood();
-	for (int i = 0; i < min((int)Food.size(), FOOD_COUNT); ++i)
-	{
-		inputs(0, 5 + 2 * i) = Food[i]->GetX();
-		inputs(0, 5 + 2 * i + 1) = Food[i]->GetY();
-	}
+	///////////////////////// Init input vector /////////////////////////
+	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
+	
 	r = GetHealth() * GetFullness() * 1.0 / 300000;
 	debug << "R = " << r << endl;
 	int action = -1;
@@ -967,17 +1052,26 @@ void MyPlayer::Move()
 		//nets[lastAction].AddTest(vector<double>(1, r));
 		for (int i = 0; i < Actions::COUNT; ++i)
 		{
-			nets[lastAction].AddTest(vector<double>(1, Q));
-			//nets[lastAction].RunTrainingSetOffline();
+			nets[i].AddTest(vector<double>(1, r));
+			int Epoch = 20;
+			while (Epoch--)
+			{
+				if (nets[i].RunTrainingSetOffline() < 1e-2)
+					break;
+			}
 		}
-		nets[lastAction].RunTrainingSetOffline();
+		/*int Epoch = 20;
+		while (Epoch--)
+		{
+			if (nets[lastAction].RunTrainingSetOffline() < 1e-2)
+				break;
+		}*/
 	}
 
-	/*Q = -DBL_MAX;
+	Q = -DBL_MAX;
 	for (int i = 0; i < nets.size(); ++i)
 	{
 		nets[i].Run(inputs);
-
 		double curQ = nets[i].GetOut().sum();
 		debug << curQ << " " << i << endl;
 
@@ -987,7 +1081,7 @@ void MyPlayer::Move()
 			action = i;
 		}
 	}
-	debug << "SELECT " << Q << " " << action << endl;*/
+	debug << "SELECT " << Q << " " << action << endl;
 
 
 	DoAction(this, (Actions)action);

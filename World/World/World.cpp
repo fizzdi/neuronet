@@ -191,7 +191,7 @@ void World::LoadPlayers() {
 				NewPlayer->SetR(32);
 				NewPlayer->SetWorld(this);
 				NewPlayer->SetSpeed(10);
-				NewPlayer->SetAngle(M_PI);
+				NewPlayer->SetAngle(M_PI*0.5);
 				NewPlayer->SetFullness(300);
 				NewPlayer->SetHealth(1000);
 				NewPlayer->SetColor(Colors[i]);
@@ -218,7 +218,7 @@ void World::UnloadPlayers() {
 
 
 void World::GenerateFood() {
-	int FoodCount = rand() % 10;
+	int FoodCount = rand() % 20;
 	for (int i = 0; i < FoodCount; ++i) {
 		Food *NewFood = new Food();
 		NewFood->SetCoords(rand() % 600 + 20, rand() % 425 + 20);
@@ -257,7 +257,7 @@ void World::GenerateWeapon() {
 
 void World::GenerateBonuses() {
 	GenerateFood();
-	GenerateWeapon();
+	//GenerateWeapon();
 }
 
 void World::UpdateBonuses() {
@@ -293,8 +293,8 @@ void World::UpdateBonuses() {
 		}
 	}
 
-	if (WorldFood.size() <= 2) GenerateFood();
-	if (WorldWeapon.size() <= 2) GenerateWeapon();
+	if (WorldFood.size() <= 15) GenerateFood();
+	//if (WorldWeapon.size() <= 2) GenerateWeapon();
 	//debugout << "End Update Bonuses" << endl;
 }
 

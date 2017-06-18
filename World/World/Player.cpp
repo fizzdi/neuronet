@@ -68,6 +68,7 @@ void Player::MoveTo(int ToX, int ToY) {
 
 	if (ToX < 0 || ToY < 0 || ToX > GetWorld()->GetWidth() || ToY > GetWorld()->GetHeight()) return;
 	if (GetX() == ToX && GetY() == ToY) return;
+	//Angle = 0.0;
 	double AngleTo = GetAngleTo(ToX, ToY);
 	Rotate(AngleTo);
 	int NewX = GetX() + (double)GetSpeed()*cos(Angle),
@@ -108,33 +109,21 @@ void Player::Strike(Player *EP) {
 
 void Player::StepForward()
 {
-	int x = 50.0 * cos(Angle);
-	int y = 50.0 * sin(Angle);
-	//debugout << "Forward: " << GetX() << " " << GetY() << " -> " << x << " " << y << " " << Angle << endl;
-	MoveTo(x, y);
+	MoveTo(GetX(), GetY() - 1500);
 }
 
 void Player::StepBackward()
 {
-	int x = 50.0 * cos(Angle + M_PI);
-	int y = 50.0 * sin(Angle + M_PI);
-	//debugout << "Backward: " << GetX() << " " << GetY() << " -> " << x << " " << y << " " << Angle << endl;
-	MoveTo(x, y);
+	MoveTo(GetX(), GetY() + 1500);
 }
 
 void Player::StepLeft()
 {
-	int x = 50.0 * cos(Angle - M_PI/2);
-	int y = 50.0 * sin(Angle - M_PI/2);
-	//debugout << "Left: " << GetX() << " " << GetY() << " -> " << x << " " << y << " " << Angle << endl;
-	MoveTo(x, y);
+	MoveTo(GetX() - 1500, GetY());
 }
 
 void Player::StepRight()
 {
-	int x = 50.0 * cos(Angle + M_PI / 2);
-	int y = 50.0 * sin(Angle + M_PI / 2);
-	//debugout << "Right: " << GetX() << " " << GetY() << " -> " << x << " " << y << " " << Angle << endl;
-	MoveTo(x, y);
+	MoveTo(GetX() + 1500, GetY());
 }
 

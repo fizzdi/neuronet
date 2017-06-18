@@ -157,7 +157,7 @@ bool PerformCompilation() {
 			<< "/OUT:\""<< CurDir << "\\" << OUTDIR
 			<< "\\" << setfill('0') << setw(2) << st.wDay << setw(2) << st.wMonth << st.wYear << "_" << setw(2) << st.wHour << setw(2) << st.wMinute << setw(2) << st.wSecond << "_" << st.wMilliseconds << ".dll\""
 			<< " /MACHINE:X86 /SUBSYSTEM:WINDOWS /LIBPATH:\"" << DIRECTXPATH << "Lib\\x86\" "
-			<< "/libpath:\"" << CurDir << "\\" << INCLUDEDIR << "\" /TLBID:1 /MD"
+			<< "/libpath:\"" << CurDir << "\\" << INCLUDEDIR << "\" /TLBID:1 /MD /OPENMP"
 			//delete lib && obj files
 			<< " & del " << OUTDIR << "\\*.lib"
 			<<  "& del " << OUTDIR << "\\*.exp & del *.obj";
