@@ -3,12 +3,8 @@
 #include <algorithm>
 #include "World.h"
 #include "MyPlayer.h"
-#include <fstream>
-#include <ctime>
 
 using namespace std;
-ofstream debug("neurodebug.txt");
-
 const double ALPHA = 2.0;
 const double GAMMA = 0.99;
 const double LAMBDA = 0.5;
@@ -27,8 +23,8 @@ const int BLOCK_COUNT = 0;
 const int PLAYER_COUNT = 1;
 
 //Neural config
-const int INPUT_NEURON_COUNT = PARAMS_COUNT + (PLAYER_COUNT + FOOD_COUNT) * 2;
-const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT + 100;
+const int INPUT_NEURON_COUNT = PARAMS_COUNT + (PLAYER_COUNT + FOOD_COUNT)*2;
+const int HIDDEN_NEURON_COUNT = 100;
 const int OUTPUT_NEURON_COUNT = 1;
 
 
@@ -134,7 +130,6 @@ namespace NeuroNet
 		std::vector<Matrix2d> LastGradSum;
 		int _countlayers;
 	public:
-		ElmanNetwork() {};
 		ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
 		std::vector<Problem> TrainingSet;
 		std::vector<Matrix2d> eligibility;
@@ -774,8 +769,6 @@ namespace NeuroNet
 			eligibility[i].Init(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
 			LastDeltaSum[i].Init(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
 		}
-
-		debug << _layers[1].Weights(0, 0) << endl << endl;;
 	}
 
 	void ElmanNetwork::Run(std::vector<double> input)
@@ -831,22 +824,24 @@ void DoAction(MyPlayer* me, Actions action)
 }
 
 vector<NeuroNet::ElmanNetwork> nets;
+
 void MyPlayer::Init()
 {
 	SetName(L"NeuroPlayer");
-
-	nets.resize(Actions::COUNT);
-	for (int i = 0; i < nets.size(); ++i)
-	{
-		debug << "net " << i << endl;
-		nets[i].Init(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
-		debug << "net " << i << "inited" << endl << endl;
-	}
 }
 
 bool FirstStep = true;
+bool InitFlag = true;
 void MyPlayer::Move()
 {
+	StepForward();
+
+	return;
+	if (InitFlag)
+	{
+		nets.resize(Actions::COUNT, NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM));
+		InitFlag = false;
+	}
 	//Input order: My coordinates, Health, Fullness, Angle, Food coordinates, Enemy coordinates, Trap coordinates, Poison coordinates, Cornucopia coordinates, Block coordinates
 	NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT, -1.0);
 
@@ -866,29 +861,25 @@ void MyPlayer::Move()
 		inputs(0, 5 + 2 * i + 1) = Food[i]->GetY();
 	}
 	/////////////////////////////////////////////////////////////////////
-	r = GetHealth() * GetFullness() * 1.0 / 300000;
-	int action = -1;
 
 	Q = -1e10;
+	int action = -1;
 	for (int i = 0; i < nets.size(); ++i)
 	{
-
 		nets[i].Run(inputs);
-
 		double curQ = nets[i].GetOut().sum();
-		debug << curQ << " " << i << endl;
-
 		if (Q < curQ)
 		{
 			Q = curQ;
 			action = i;
 		}
 	}
-	debug << "SELECT " << Q << " " << action << endl;
+
 	if (!FirstStep)
 	{
-		nets[lastAction].MCQLCorrect();
-		//nets[lastAction].CalcGradDelta({ Q });
+
+		//nets[action].MCQLCorrect();
+		//nets[action].CalcGradDelta({ Q });
 	}
 
 	DoAction(this, (Actions)action);
@@ -897,7 +888,7 @@ void MyPlayer::Move()
 	lastQ = Q;
 }
 
-#ifdef _DEBUG
+
 int main()
 {
 	MyPlayer *a = new MyPlayer();
@@ -905,4 +896,3 @@ int main()
 	a->Move();
 	return 0;
 }
-#endif

@@ -53,6 +53,8 @@ namespace client
             //server.connect();
             // server.addBots(lb_local_bots);
             world.server = server;
+
+            File.Delete("debug.txt");
         }
 
         private void b_downloadFile_Click(object sender, EventArgs e)
@@ -350,6 +352,12 @@ namespace client
 
         private void button1_Click(object sender, EventArgs e)
         {
+            //maybe debug
+            world.freePlayers();
+            foreach (var file in Directory.GetFiles("players", "*.dll"))
+                File.Delete(file);
+            //-----
+
             var lib = LoadLibrary("solve_compiller.dll");
 
             using (StreamWriter wr = new StreamWriter("dlldebug.txt"))
@@ -361,6 +369,17 @@ namespace client
             }
                 if (lib != IntPtr.Zero)
                     FreeLibrary(lib);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            button1_Click(sender, e);
+            world.start();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            world.start();
         }
     }
 }

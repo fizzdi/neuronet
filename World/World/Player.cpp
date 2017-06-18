@@ -42,7 +42,30 @@ double Player::GetDistanceTo(Element *SomeObject) {
 }
 
 void Player::MoveTo(int ToX, int ToY) {
-	//if (ToX < 0 || ToY < 0 || ToX > GetWorld()->GetWidth() || ToY > GetWorld()->GetHeight()) return;
+	if (ToY > GetWorld()->GetHeight())
+	{
+		ToX = GetX() + (ToX - GetX()) * (GetWorld()->GetHeight() - GetR() - GetY()) * 1.0 / (ToY - GetY());
+		ToY = GetWorld()->GetHeight() - GetR();
+	}
+
+	if (ToY < GetR())
+	{
+		ToX = GetX() - (ToX - GetX()) * (GetY() - GetR()) * 1.0 / (GetY() - ToY);
+		ToY = GetR();
+	}
+
+	if (ToX > GetWorld()->GetWidth() - GetR())
+	{
+		ToY = GetY() + (GetWorld()->GetWidth() - GetR() - GetX()) * (ToY - GetY()) * 1.0 / (ToX - GetX());
+		ToX = GetWorld()->GetWidth() - GetR();
+	}
+
+	if (ToX < GetR())
+	{
+		ToY = GetY() - (GetX() - GetR()) * (ToY - GetY()) * 1.0 / (GetX() - ToX);
+		ToX = GetR();
+	}
+
 	if (ToX < 0 || ToY < 0 || ToX > GetWorld()->GetWidth() || ToY > GetWorld()->GetHeight()) return;
 	if (GetX() == ToX && GetY() == ToY) return;
 	double AngleTo = GetAngleTo(ToX, ToY);
@@ -87,7 +110,7 @@ void Player::StepForward()
 {
 	int x = 50.0 * cos(Angle);
 	int y = 50.0 * sin(Angle);
-	debugout << GetX() << " " << GetY() << " -> " << x << " " << y << " " << Angle << endl;
+	//debugout << "Forward: " << GetX() << " " << GetY() << " -> " << x << " " << y << " " << Angle << endl;
 	MoveTo(x, y);
 }
 
@@ -95,6 +118,7 @@ void Player::StepBackward()
 {
 	int x = 50.0 * cos(Angle + M_PI);
 	int y = 50.0 * sin(Angle + M_PI);
+	//debugout << "Backward: " << GetX() << " " << GetY() << " -> " << x << " " << y << " " << Angle << endl;
 	MoveTo(x, y);
 }
 
@@ -102,6 +126,7 @@ void Player::StepLeft()
 {
 	int x = 50.0 * cos(Angle - M_PI/2);
 	int y = 50.0 * sin(Angle - M_PI/2);
+	//debugout << "Left: " << GetX() << " " << GetY() << " -> " << x << " " << y << " " << Angle << endl;
 	MoveTo(x, y);
 }
 
@@ -109,6 +134,7 @@ void Player::StepRight()
 {
 	int x = 50.0 * cos(Angle + M_PI / 2);
 	int y = 50.0 * sin(Angle + M_PI / 2);
+	//debugout << "Right: " << GetX() << " " << GetY() << " -> " << x << " " << y << " " << Angle << endl;
 	MoveTo(x, y);
 }
 

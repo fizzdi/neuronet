@@ -3,22 +3,26 @@
 #include <sstream>
 #include <Processthreadsapi.h>
 #include "global.h"
+#include <ctime>
+#include <iomanip>
 
 using namespace std;
-wofstream debugout("debug.txt");
+wofstream debugout("debug.txt",wofstream::app);
 DWORD WINAPI DoAll(LPVOID lpParam);
 
 HINSTANCE  inj_hModule;          //Injected Modules Handle
 HWND       hWnd;            //Window Handle
 
 
-bool CompileSolution(char CompileCommand[]);
+bool CompileSolution(char *CompileCommand);
 bool PerformCompilation();
 void Compile();
 char CurDir[MAX_STR_LEN];
-#define DIRECTXPATH "C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)"
-#define MVSVERSION "11.0"
+#define DIRECTXPATH "C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)\\"
+#define MVSDIR "C:\\Program Files (x86)\\Microsoft Visual Studio 11.0\\VC\\"
 #define OUTDIR "players"
+#define INCLUDEDIR "include"
+#define SULUTIONDIR "solutions"
 
 DWORD WINAPI DoAll(LPVOID lpParam)
 {
@@ -53,7 +57,7 @@ void Compile()
 
 // ‘ункци€ запуска процесса компил€ции
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool CompileSolution(char CompileCommand[]) {
+bool CompileSolution(char *CompileCommand) {
 	PROCESS_INFORMATION ProcessInf = { 0 };
 	STARTUPINFO StartInf;
 	stringstream LogMsg;
@@ -133,21 +137,39 @@ bool CompileSolution(char CompileCommand[]) {
 // ‘ункци€ выполнени€ компил€ции со всеми вспомогательными операци€ми
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool PerformCompilation() {
-	char CurrentCmd[MAX_STR_LEN];
 
-	string str = "\"C:\\Program Files (x86)\\Microsoft Visual Studio " + string(MVSVERSION) + "\\VC\\vcvarsall.bat\" & cl.exe /I\"" + string(DIRECTXPATH) + "\\Include\" /I\"" +
-		string(CurDir) + "\\ForPlayerCompilation\" /D_USRDLL /D_WINDLL \"";
-
-	////////////////////////////////////////////// построение строки компил€ции ///////////////////////////////////////////
-	sprintf_s(CurrentCmd, sizeof(CurrentCmd), "%s%s%s%s%s%s%s%s%s%s%s%s%s",
-		str.c_str(), CurDir, "\\H.cpp\" \"", CurDir, "\\ForPlayerCompilation\\MyPlayerExport.cpp\" /link /DLL /OUT:\"",
-		CurDir, "\\", OUTDIR, "\\H.dll\" /MACHINE:X86 /SUBSYSTEM:WINDOWS /LIBPATH:\"", DIRECTXPATH, "\\Lib\\x86\" /libpath:\"", CurDir, "\\ForPlayerCompilation\" /TLBID:1 /MD");
-	debugout << CurrentCmd << endl;
-
-	if (!CompileSolution(CurrentCmd)) {
-		debugout << "Internal tester error" << endl;
-		return false;
-	}
+	WIN32_FIND_DATA findFileData;
+	//ostringstream filedir;
+	//filedir << CurDir << "\sou"
+	HANDLE hl = FindFirstFile("solutions\\*.cpp", &findFileData);
+	if (hl == INVALID_HANDLE_VALUE) return false;
+	do
+	{
+		////////////////////////////////////////////// построение строки компил€ции ///////////////////////////////////////////
+		SYSTEMTIME st;
+		GetLocalTime(&st);
+		debugout << "File: " << findFileData.cFileName << endl;
+		ostringstream os;
+		os << "\"" << MVSDIR << "vcvarsall.bat\" & " << "cl.exe "
+			<< "/I \"" << DIRECTXPATH << "include\" "
+			<< "/I \"" << CurDir << "\\" << INCLUDEDIR << "\" "
+			<< "/D_USRDLL /D_WINDLL \"" << CurDir << "\\" << SULUTIONDIR << "\\" << findFileData.cFileName << "\" \"" << CurDir << "\\include\\MyPlayerExport.cpp\" /link /DLL " 
+			<< "/OUT:\""<< CurDir << "\\" << OUTDIR
+			<< "\\" << setfill('0') << setw(2) << st.wDay << setw(2) << st.wMonth << st.wYear << "_" << setw(2) << st.wHour << setw(2) << st.wMinute << setw(2) << st.wSecond << "_" << st.wMilliseconds << ".dll\""
+			<< " /MACHINE:X86 /SUBSYSTEM:WINDOWS /LIBPATH:\"" << DIRECTXPATH << "Lib\\x86\" "
+			<< "/libpath:\"" << CurDir << "\\" << INCLUDEDIR << "\" /TLBID:1 /MD"
+			//delete lib && obj files
+			<< " & del " << OUTDIR << "\\*.lib"
+			<<  "& del " << OUTDIR << "\\*.exp & del *.obj";
+		string commandstr = os.str();
+		os.str("");
+		debugout << wstring(commandstr.begin(), commandstr.end()) << endl;
+		if (!CompileSolution((char*)commandstr.c_str())) {
+			debugout << "Internal tester error" << endl;
+			return false;
+		}
+	} while (FindNextFile(hl, &findFileData) != 0);
+	FindClose(hl);
 	return true;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

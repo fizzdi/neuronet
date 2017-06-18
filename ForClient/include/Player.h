@@ -20,6 +20,11 @@ private:
 	World* CurrentWorld;
 	D3DCOLOR Color;
 	int Idx;
+	HMODULE PlayerLib;
+	bool RunTime;
+	bool TimeLimit;
+	bool MemoryLimit;
+
 private:
 	void Render(LPDIRECT3DDEVICE9 d3ddev);
 	void RenderFull(LPDIRECT3DDEVICE9 d3ddev);
@@ -36,7 +41,11 @@ private:
 	D3DCOLOR GetColor() { return Color; };
 	void SetColor(D3DCOLOR NewColor) { Color = NewColor; };
 public:
-	Player() { Speed = 0; Health = 0; Fullness = 0; HasGolograf = false; };
+	Player() {
+		Speed = 0; Health = 0; Fullness = 0; 
+		HasGolograf = false; PlayerLib = nullptr; 
+		RunTime = TimeLimit = MemoryLimit = false;
+	};
 	~Player() {};
 	int GetSpeed() { return Speed; };
 	int GetHealth() { return Health; };
@@ -58,6 +67,10 @@ public:
 	void MoveTo(int ToX, int ToY);
 	void MoveTo(Element *SomeObject);
 	void Strike(Player *EP);
+	void StepForward();
+	void StepBackward();
+	void StepLeft();
+	void StepRight();
 
 	virtual void Init() {};
 	virtual void Move() {};

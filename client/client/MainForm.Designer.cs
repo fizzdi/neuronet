@@ -31,6 +31,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.tabcontrol = new System.Windows.Forms.TabControl();
             this.tab_send = new System.Windows.Forms.TabPage();
+            this.button1 = new System.Windows.Forms.Button();
             this.b_clear_send = new System.Windows.Forms.Button();
             this.b_send = new System.Windows.Forms.Button();
             this.l_sourceFile = new System.Windows.Forms.LinkLabel();
@@ -68,7 +69,8 @@
             this.tb_GroupName = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.ofd_sourseFile = new System.Windows.Forms.OpenFileDialog();
-            this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
+            this.button3 = new System.Windows.Forms.Button();
             this.tabcontrol.SuspendLayout();
             this.tab_send.SuspendLayout();
             this.tab_history.SuspendLayout();
@@ -103,6 +105,8 @@
             // 
             // tab_send
             // 
+            this.tab_send.Controls.Add(this.button3);
+            this.tab_send.Controls.Add(this.button2);
             this.tab_send.Controls.Add(this.button1);
             this.tab_send.Controls.Add(this.b_clear_send);
             this.tab_send.Controls.Add(this.b_send);
@@ -116,6 +120,16 @@
             this.tab_send.TabIndex = 0;
             this.tab_send.Text = "Отправка";
             this.tab_send.UseVisualStyleBackColor = true;
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(377, 161);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 5;
+            this.button1.Text = "Compile";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // b_clear_send
             // 
@@ -280,7 +294,6 @@
             // b_localRun
             // 
             this.b_localRun.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.b_localRun.Enabled = true;
             this.b_localRun.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
             this.b_localRun.Location = new System.Drawing.Point(207, 264);
             this.b_localRun.Name = "b_localRun";
@@ -621,15 +634,25 @@
             this.ofd_sourseFile.Filter = "Файл кода C++|*.cpp";
             this.ofd_sourseFile.Title = "Выберите файл решения";
             // 
-            // button1
+            // button2
             // 
-            this.button1.Location = new System.Drawing.Point(377, 161);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 5;
-            this.button1.Text = "button1";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.button2.Location = new System.Drawing.Point(377, 191);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(75, 23);
+            this.button2.TabIndex = 6;
+            this.button2.Text = "Compile&Run";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(377, 221);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(75, 23);
+            this.button3.TabIndex = 7;
+            this.button3.Text = "Run";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.button3_Click);
             // 
             // MainForm
             // 
@@ -703,6 +726,8 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button b_save_settings;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button button3;
     }
 }
 

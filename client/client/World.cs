@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Diagnostics;
 
 namespace client
 {
@@ -40,23 +41,37 @@ namespace client
         }
 
         public void start()
-        { 
+        {
             try
             {
                 if (_world != IntPtr.Zero)
                     destroyWorld();
-                _world = LoadLibrary("world.dll");
+                _world = LoadLibrary("include\\world.dll");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Logger.LogMessage(ex);
             }
         }
-        
+
         private void destroyWorld()
         {
+            freePlayers();
+            var a = FreeLibrary(_world);
+        }
 
-            FreeLibrary(_world);
+        public void freePlayers()
+        {
+            foreach (ProcessModule mod in Process.GetCurrentProcess().Modules)
+            {
+                try
+                {
+                    if ((new DirectoryInfo(mod.FileName)).Parent.ToString() == "players")
+                        FreeLibrary(mod.BaseAddress);
+                }
+                catch (Exception ex)
+                { }
+            }
         }
     }
 }
