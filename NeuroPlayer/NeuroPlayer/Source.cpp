@@ -5,6 +5,8 @@
 #include "MyPlayer.h"
 #include <fstream>
 #include <ctime>
+#include <exception>
+#include <climits>
 
 using namespace std;
 ofstream debug("neurodebug.txt");
@@ -139,6 +141,7 @@ namespace NeuroNet
 		std::vector<Problem> TrainingSet;
 		std::vector<Matrix2d> eligibility;
 		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
+		void Run();
 		void Run(std::vector<double> input);
 		void Run(Matrix2d &input);
 		double RunTrainingSetOffline(bool print = false);
@@ -706,15 +709,22 @@ namespace NeuroNet
 
 	void ElmanNetwork::MCQLCorrect()
 	{
-		for (int i = 1; i <= _countlayers; ++i)
-			_layers[i].Weights += eligibility[i] * ALPHA*(r + GAMMA*Q - lastQ);
+		try {
+			for (int i = 1; i < _countlayers; ++i)
+				_layers[i].Weights += eligibility[i] * ALPHA*(r + GAMMA*Q - lastQ);
 
-		std::vector<double> out;
-		out.push_back(Q);
-		CalcGradDelta(out);
+			std::vector<double> out;
+			out.push_back(Q);
+			CalcGradDelta(out);
 
-		for (int i = 1; i <= _countlayers; ++i)
-			eligibility[i] = _layers[i].Grad + eligibility[i] * GAMMA*LAMBDA;
+			for (int i = 1; i < _countlayers; ++i)
+				eligibility[i] = _layers[i].Grad + eligibility[i] * GAMMA*LAMBDA;
+		}
+		catch (std::exception ex)
+		{
+			debug << "EXCEPTION: " << endl << ex.what() << endl;
+			throw new std::exception("Exit");
+		}
 	}
 
 	Matrix2d ElmanNetwork::GetOut() const
@@ -778,6 +788,27 @@ namespace NeuroNet
 		debug << _layers[1].Weights(0, 0) << endl << endl;;
 	}
 
+	void ElmanNetwork::Run()
+	{
+		try {
+			//init hidden and output layers
+			for (int i = 1; i < (int)_layers.size(); ++i)
+			{
+				_layers[i].CalculateStates(_layers[i - 1]);
+				_layers[i].CalculateAxons();
+			}
+
+			//copy hidden into input (context)
+			for (int i = 1; i <= _layers[1].Axons.GetHorizontalSize(); ++i)
+				_layers[0].States(0, _layers[0].States.GetHorizontalSize() - i) = _layers[1].Axons(0, _layers[1].Axons.GetHorizontalSize() - i);
+		}
+		catch (std::exception ex)
+		{
+			debug << "EXCEPTION: " << endl << ex.what() << endl;
+			throw new std::exception("Exit");
+		}
+	}
+
 	void ElmanNetwork::Run(std::vector<double> input)
 	{
 		Run(Matrix2d(input));
@@ -790,16 +821,7 @@ namespace NeuroNet
 			_layers[0].States(0, i) = input(0, i);
 		_layers[0].CalculateAxons();
 
-		//init hidden and output layers
-		for (int i = 1; i < (int)_layers.size(); ++i)
-		{
-			_layers[i].CalculateStates(_layers[i - 1]);
-			_layers[i].CalculateAxons();
-		}
-
-		//copy hidden into input (context)
-		for (int i = 1; i <= _layers[1].Axons.GetHorizontalSize(); ++i)
-			_layers[0].States(0, _layers[0].States.GetHorizontalSize() - i) = _layers[1].Axons(0, _layers[1].Axons.GetHorizontalSize() - i);
+		Run();
 	}
 }
 
@@ -830,6 +852,7 @@ void DoAction(MyPlayer* me, Actions action)
 	}
 }
 
+bool FirstStep = true;
 vector<NeuroNet::ElmanNetwork> nets;
 void MyPlayer::Init()
 {
@@ -844,9 +867,10 @@ void MyPlayer::Init()
 	}
 }
 
-bool FirstStep = true;
 void MyPlayer::Move()
 {
+	int b = 1;
+	int a = 1 / (b == 0);
 	//Input order: My coordinates, Health, Fullness, Angle, Food coordinates, Enemy coordinates, Trap coordinates, Poison coordinates, Cornucopia coordinates, Block coordinates
 	NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT, -1.0);
 
@@ -867,12 +891,12 @@ void MyPlayer::Move()
 	}
 	/////////////////////////////////////////////////////////////////////
 	r = GetHealth() * GetFullness() * 1.0 / 300000;
+	debug << "R = " << r << endl;
 	int action = -1;
 
-	Q = -1e10;
+	Q = -DBL_MAX;
 	for (int i = 0; i < nets.size(); ++i)
 	{
-
 		nets[i].Run(inputs);
 
 		double curQ = nets[i].GetOut().sum();
@@ -890,6 +914,7 @@ void MyPlayer::Move()
 		nets[lastAction].MCQLCorrect();
 		//nets[lastAction].CalcGradDelta({ Q });
 	}
+	FirstStep = false;
 
 	DoAction(this, (Actions)action);
 
