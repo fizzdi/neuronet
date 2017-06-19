@@ -8,9 +8,12 @@
 #include <exception>
 #include <climits>
 #include <omp.h>
+#include <random>
 
 using namespace std;
 ofstream debug("neurodebug.txt");
+std::mt19937 eng;
+std::uniform_int_distribution<> dist(1, 100);
 
 const double ALPHA = 2.0;
 const double GAMMA = 0.99;
@@ -33,7 +36,7 @@ const int PLAYER_COUNT = 1;
 const int SENSOR_COUNT = 8;
 const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
 const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT * 1.5;
-const int OUTPUT_NEURON_COUNT = 1;
+const int OUTPUT_NEURON_COUNT = 4;
 
 
 
@@ -150,6 +153,7 @@ namespace NeuroNet
 		void Run(std::vector<double> input);
 		void Run(Matrix2d &input);
 		void AddTest(vector<double> ideal);
+		void AddTest(Matrix2d ideal);
 		double RunTrainingSetOffline(bool print = false);
 		double CalculateError(Problem& test, bool print = false);
 		void PrintProblemResult(Problem& test);
@@ -579,18 +583,19 @@ namespace NeuroNet
 			GradSum[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
 			DeltaSum[i] = Matrix2d(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
 		}
-		int TestCount = 30;
+		int TestCount = 20;
 
-		for (int i = min((int)TrainingSet.size() - 1, TestCount); i >= 0; --i)
+		while (TestCount--)
 		{
-			Run(TrainingSet[TrainingSet.size() - i - 1].inputs);
-			CalcGradDelta(TrainingSet[TrainingSet.size() - i - 1].outputs);
+			int itest = dist(eng) % TrainingSet.size();
+			Run(TrainingSet[itest].inputs);
+			CalcGradDelta(TrainingSet[itest].outputs);
 			for (int i = 1; i < 3; ++i)
 			{
 				GradSum[i] += _layers[i].Grad;
 				DeltaSum[i] += _layers[i].Delta;
 			}
-			if (print) PrintProblemResult(TrainingSet[TrainingSet.size() - i - 1]);
+			if (print) PrintProblemResult(TrainingSet[itest]);
 		}
 		if (print) std::cout << std::endl << "=======CORRECT==========" << std::endl;
 
@@ -838,7 +843,7 @@ namespace NeuroNet
 		_layers.push_back(Layer(InputCount + NeuronCount, 0, LINE));
 		_layers.push_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction, true));
 		_layers.back().NguenWidrow(-2, 2, -1, 1);
-		_layers.push_back(Layer(OutputCount, NeuronCount, LINE, true));
+		_layers.push_back(Layer(OutputCount, NeuronCount, SIGM, true));
 		//_layers.back().NguenWidrow(-1, 1, -1, 1);
 		_countlayers = _layers.size();
 
@@ -896,6 +901,12 @@ namespace NeuroNet
 		TrainingSet.back().inputs = _layers[0].States;
 		TrainingSet.back().outputs = ideal;
 	}
+	void ElmanNetwork::AddTest(Matrix2d ideal)
+	{
+		TrainingSet.resize(TrainingSet.size() + 1);
+		TrainingSet.back().inputs = _layers[0].States;
+		TrainingSet.back().outputs = ideal;
+	}
 }
 
 enum Actions { FORWARD, BACKWARD, LEFTSTEP, RIGHTSTEP, COUNT };
@@ -925,6 +936,7 @@ void DoAction(MyPlayer* me, Actions action)
 	}
 }
 
+SYSTEMTIME st;
 bool FirstStep = true;
 vector<NeuroNet::ElmanNetwork> nets;
 //NeuroNet::ElmanNetwork net;
@@ -1034,8 +1046,11 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 
 }
 
+int lasttest = -1;
+int tick = -1;
 void MyPlayer::Move()
 {
+	tick++;
 	//Input order: My coordinates, Health, Fullness, Angle, Food coordinates, Enemy coordinates, Trap coordinates, Poison coordinates, Cornucopia coordinates, Block coordinates
 	NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT, -1.0);
 
@@ -1047,51 +1062,52 @@ void MyPlayer::Move()
 	r = GetHealth() * GetFullness() * 1.0 / 300000;
 
 	int action = -1;
-	int rnd = rand();
-	debug << "RAND: " << rnd;
+	GetLocalTime(&st);
+	int rnd = st.wMilliseconds;
 	if (!FirstStep)
 	{
 		//nets[lastAction].MCQLCorrect();
 		//nets[lastAction].CalcGradDelta(r);
 		//nets[lastAction].AddTest(vector<double>(1, r));
 		int Epoch = 10;
-		for (int i = 0; i < Actions::COUNT; ++i)
+		auto lastout = net.GetOut();
+		//if (lasttest != lastAction)
 		{
-			nets[i].AddTest(vector<double>(1, r));
-			/*while (Epoch--)
+			for (int i = 0; i < lastout.GetHorizontalSize(); ++i)
 			{
-			if (nets[i].RunTrainingSetOffline() < 1e-2)
-			break;
-			}*/
+				lastout(0, i) = i == lastAction;
+			}
+			net.AddTest(lastout);
+			while (Epoch--)
+			{
+				if (net.RunTrainingSetOffline() < 1e-2)
+					break;
+			}
+			lasttest = lastAction;
 		}
-		while (Epoch--)
-		{
-			if (nets[lastAction].RunTrainingSetOffline() < 1e-2)
-				break;
-		}
+
 	}
 
-	debug << "R = " << r << endl;
-	if (rnd % 2 != 0)
+
+	if (/*tick < 50 ||*/ ((tick % 20) == 0))
 	{
-
-		Q = -DBL_MAX;
-		for (int i = 0; i < nets.size(); ++i)
-		{
-			nets[i].Run(inputs);
-			double curQ = nets[i].GetOut().sum();
-			debug << curQ << " " << i << endl;
-
-			if (Q < curQ)
-			{
-				Q = curQ;
-				action = i;
-			}
-		}
+		action = dist(eng) % Actions::COUNT;
+		debug << "RANDOM ";
 	}
 	else
 	{
-		action = rnd % Actions::COUNT;
+		Q = -DBL_MAX;
+		net.Run(inputs);
+		auto out = net.GetOut();
+		debug << "Outs: " << out << endl;
+		for (int i = 0; i < out.GetHorizontalSize(); ++i)
+		{
+			if (Q < out(0, i))
+			{
+				Q = out(0, i);
+				action = i;
+			}
+		}
 	}
 	debug << "SELECT " << Q << " " << action << endl;
 
