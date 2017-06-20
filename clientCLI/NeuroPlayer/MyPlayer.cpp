@@ -603,22 +603,34 @@ namespace NeuroNet
 			_layers[i].DeltaSum.fill(0.0);
 		}
 		int TestCount = 20;
-
-		while (TestCount--)
+		if (TrainingSet.size() <= TestCount)
 		{
-			int itest = dist(eng) % TrainingSet.size();
-			//int itest = TrainingSet.size() - 1;
-			//debug << "Test " << itest << std::endl;
-			Run(TrainingSet[itest].inputs);
-			//debug << "AfterRun " << itest << std::endl;
-			CalcGradDelta(TrainingSet[itest].outputs);
-			//debug << "AfterCalc " << itest << std::endl;
-			for (int i = 1; i < _countlayers; ++i)
+			for (int t = 0; t < TrainingSet.size(); ++t)
 			{
-				_layers[i].GradSum += _layers[i].Grad;
-				_layers[i].DeltaSum += _layers[i].Delta;
+				Run(TrainingSet[t].inputs);
+				CalcGradDelta(TrainingSet[t].outputs);
+				for (int i = 1; i < _countlayers; ++i)
+				{
+					_layers[i].GradSum += _layers[i].Grad;
+					_layers[i].DeltaSum += _layers[i].Delta;
+				}
+				if (print) PrintProblemResult(TrainingSet[t]);
 			}
-			if (print) PrintProblemResult(TrainingSet[itest]);
+		}
+		else
+		{
+			while (TestCount--)
+			{
+				int itest = dist(eng) % TrainingSet.size();
+				Run(TrainingSet[itest].inputs);
+				CalcGradDelta(TrainingSet[itest].outputs);
+				for (int i = 1; i < _countlayers; ++i)
+				{
+					_layers[i].GradSum += _layers[i].Grad;
+					_layers[i].DeltaSum += _layers[i].Delta;
+				}
+				if (print) PrintProblemResult(TrainingSet[itest]);
+			}
 		}
 		if (print) std::cout << std::endl << "=======CORRECT==========" << std::endl;
 
@@ -870,7 +882,7 @@ namespace NeuroNet
 		_layers.push_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction, true));
 		_layers.back().NguenWidrow(-2, 2, -1, 1);
 		_layers.push_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction, true));
-		_layers.back().NguenWidrow(-2, 2, -1, 1); 
+		_layers.back().NguenWidrow(-2, 2, -1, 1);
 		_layers.push_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction, true));
 		_layers.back().NguenWidrow(-2, 2, -1, 1);
 		_layers.push_back(Layer(OutputCount, NeuronCount, LINE, true));
@@ -1204,8 +1216,19 @@ void MyPlayer::Move()
 	{
 		//nets[lastAction].CalcGradDelta(r);
 		//nets[lastAction].AddTest(vector<double>(1, r));
+
+		int maxtests = 700;
+		int mintest = 300;
 		for (int i = 0; i < Actions::COUNT; ++i)
 		{
+			if (nets[i].TrainingSet.size() > maxtests)
+			{
+
+				vector<NeuroNet::Problem> vp;
+				int ct = mintest;
+				while (ct--)
+					vp.push_back(nets[i].TrainingSet[dist(eng) % nets[i].TrainingSet.size()]);
+			}
 			nets[i].AddTest(vector<double>(1, r));
 			/*while (Epoch--)
 			{
@@ -1216,7 +1239,7 @@ void MyPlayer::Move()
 		//nets[lastAction].MCQLCorrect();
 		if (tick % 5 == 0)
 		{
-		int Epoch = 20;
+			int Epoch = 20;
 			while (Epoch--)
 			{
 				if (nets[lastAction].RunTrainingSetOffline() < 1e-2)
@@ -1225,10 +1248,10 @@ void MyPlayer::Move()
 		}
 	}
 
-//	debug << "R = " << r << endl;
+	//	debug << "R = " << r << endl;
 	if ((dist(eng) % 17) < 3)
 	{
-	//	debug << "RAND: " << endl;;
+		//	debug << "RAND: " << endl;;
 		Q = r;
 		action = rnd % Actions::COUNT;
 	}
