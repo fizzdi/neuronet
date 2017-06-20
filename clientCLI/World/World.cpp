@@ -1,5 +1,6 @@
-#include "World.h"
 #include "Global.h"
+#include "World.h"
+//#include "MyPlayer.h"
 
 #include <iostream>
 #include <fstream>
@@ -60,7 +61,8 @@ void World::Run() {
 				else {
 					if (Players[j]->GetFullness() > 250 && Players[j]->GetHealth() < 1000)
 						Players[j]->SetHealth(min(Players[j]->GetHealth() + 2, 1000));
-					Players[j]->SetFullness(max(Players[j]->GetFullness() - 1, 0));
+					Players[j]->SetFullness(max(Players[j]->GetFullness() - 0, 0));
+					//Players[j]->SetFullness(max(Players[j]->GetFullness() - 1, 0));
 				}
 			}
 
@@ -70,7 +72,8 @@ void World::Run() {
 				if (Players[j]->GetDistanceTo(Food[i]) < double(Players[j]->GetR() + Food[i]->GetR())) {
 					Food[i]->SetTaken();
 					if (Food[i]->GetDamage() != 0) Players[j]->SetHealth(max(Players[j]->GetHealth() - Food[i]->GetDamage(), 0));
-					else Players[j]->SetFullness(min(Players[j]->GetFullness() + Food[i]->GetFullness(), 300));
+					//else Players[j]->SetFullness(min(Players[j]->GetFullness() + Food[i]->GetFullness(), 300));
+				else Players[j]->SetFullness(min(Players[j]->GetFullness() + Food[i]->GetFullness(), INT_MAX));
 				}
 			}
 
@@ -177,29 +180,33 @@ void World::LoadPlayers() {
 	////debugout << "Players count: " << PlayerFiles.size() << endl;
 
 	D3DCOLOR Colors[] = { D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,0,255), D3DCOLOR_XRGB(0, 255, 0), D3DCOLOR_XRGB(252, 131, 10) };
-	pair<int, int> Coords[] = { {100, 100}, {540, 100}, {100, 380}, {540, 380} };
+	pair<int, int> Coords[] = { {320, 240}, {540, 100}, {100, 380}, {540, 380} };
 
 	for (int i = 0; i < PlayerFiles.size(); ++i) {
 		auto hLib = LoadLibrary((L"players\\" + PlayerFiles[i]).c_str());
 		debugout << "Loading library: " << PlayerFiles[i] << endl;
-		if (hLib != NULL) {
+		if (hLib != NULL) 
+		{
 			debugout << "Player library is loaded" << endl;
 			auto GetMyPlayer = (GetMyPlayerFunction)GetProcAddress((HMODULE)hLib, "GetMyPlayer");
-			if (GetMyPlayer != NULL) {
+			if (GetMyPlayer != NULL) 
+			{
 				Player *NewPlayer = GetMyPlayer();
 				NewPlayer->SetCoords(Coords[i].first, Coords[i].second);
-				NewPlayer->SetR(32);
+				NewPlayer->SetR(20);
 				NewPlayer->SetWorld(this);
 				NewPlayer->SetSpeed(10);
 				NewPlayer->SetAngle(M_PI*0.5);
-				NewPlayer->SetFullness(300);
-				NewPlayer->SetHealth(1000);
+				//NewPlayer->SetFullness(300);
+				NewPlayer->SetFullness(1);
+				//NewPlayer->SetHealth(1000);
+				NewPlayer->SetHealth(INT_MAX);
 				NewPlayer->SetColor(Colors[i]);
 				//debugout << "Player " << PlayerFiles[i] << " library begin init" << endl;
 				NewPlayer->Init();
 				//debugout << "Player " << PlayerFiles[i] << " library after init" << endl;
 				NewPlayer->Idx = i;
-				NewPlayer->PlayerLib = hLib;
+				//NewPlayer->PlayerLib = hLib;
 				Players.push_back(NewPlayer);
 			}
 		}
@@ -222,7 +229,7 @@ void World::GenerateFood() {
 	for (int i = 0; i < FoodCount; ++i) {
 		Food *NewFood = new Food();
 		NewFood->SetCoords(rand() % 600 + 20, rand() % 425 + 20);
-		NewFood->SetR(20);
+		NewFood->SetR(10);
 		NewFood->SetLifetime(rand() % 200 + 10);
 		if (rand() % 20 == 1) NewFood->SetDamage(rand() % 500);
 		else NewFood->SetFullness(30);

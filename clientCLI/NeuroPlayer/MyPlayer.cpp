@@ -11,6 +11,7 @@
 #include <random>
 
 using namespace std;
+#define EPS (1e-4)
 ofstream debug("neurodebug.txt");
 std::mt19937 eng;
 std::uniform_int_distribution<> dist(1, 50000);
@@ -35,7 +36,7 @@ const int PLAYER_COUNT = 1;
 //Neural config
 const int SENSOR_COUNT = 8;
 const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
-const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT * 1.5;
+const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT*1.5;
 const int OUTPUT_NEURON_COUNT = 1;
 
 
@@ -158,7 +159,7 @@ namespace NeuroNet
 		double CalculateError(Problem& test, bool print = false);
 		void PrintProblemResult(Problem& test);
 		void ResilientPropagation();
-		void ResilientPropagation(std::vector<Matrix2d> PrevSumGrad, std::vector<Matrix2d> SumGrad, std::vector<Matrix2d> PrevSumDelta, std::vector<Matrix2d> SumDelta);
+		void ResilientPropagation(std::vector<Matrix2d>& PrevSumGrad, std::vector<Matrix2d>& SumGrad, std::vector<Matrix2d>& PrevSumDelta, std::vector<Matrix2d>& SumDelta);
 		void CalcGradDelta(double output);
 		void CalcGradDelta(std::vector<double> output);
 		void CalcGradDelta(Matrix2d &output);
@@ -580,25 +581,26 @@ namespace NeuroNet
 
 	double ElmanNetwork::RunTrainingSetOffline(bool print)
 	{
-		std::vector<Matrix2d> GradSum(3);
-		std::vector<Matrix2d> DeltaSum(3);
+		std::vector<Matrix2d> GradSum(_countlayers);
+		std::vector<Matrix2d> DeltaSum(_countlayers);
 
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < _countlayers; ++i)
 		{
 			GradSum[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
 			DeltaSum[i] = Matrix2d(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
 		}
-		int TestCount = 10;
+		int TestCount = 20;
 
 		while (TestCount--)
 		{
 			int itest = dist(eng) % TrainingSet.size();
+			//int itest = TrainingSet.size() - 1;
 			//debug << "Test " << itest << std::endl;
 			Run(TrainingSet[itest].inputs);
 			//debug << "AfterRun " << itest << std::endl;
 			CalcGradDelta(TrainingSet[itest].outputs);
 			//debug << "AfterCalc " << itest << std::endl;
-			for (int i = 1; i < 3; ++i)
+			for (int i = 1; i < _countlayers; ++i)
 			{
 				GradSum[i] += _layers[i].Grad;
 				DeltaSum[i] += _layers[i].Delta;
@@ -704,7 +706,7 @@ namespace NeuroNet
 		return error;
 	}
 
-	void ElmanNetwork::ResilientPropagation(std::vector<Matrix2d> PrevSumGrad, std::vector<Matrix2d> SumGrad, std::vector<Matrix2d> PrevSumDelta, std::vector<Matrix2d> SumDelta)
+	void ElmanNetwork::ResilientPropagation(std::vector<Matrix2d>& PrevSumGrad, std::vector<Matrix2d>& SumGrad, std::vector<Matrix2d>& PrevSumDelta, std::vector<Matrix2d>& SumDelta)
 	{
 		const double EttaPlus = 1.2, EttaMinus = 0.5;
 		for (int i = 1; i < _countlayers; ++i)
@@ -848,17 +850,19 @@ namespace NeuroNet
 	void ElmanNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
 	{
 		_layers.clear();
-		_layers.push_back(Layer(InputCount + NeuronCount, 0, LINE));
-		_layers.push_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction, true));
+		_layers.push_back(Layer(InputCount/* + NeuronCount*/, 0, LINE));
+		_layers.push_back(Layer(NeuronCount, InputCount/* + NeuronCount*/, HiddenLayerFunction, true));
 		_layers.back().NguenWidrow(-2, 2, -1, 1);
-		_layers.push_back(Layer(OutputCount, NeuronCount, SIGM, true));
+		_layers.push_back(Layer(NeuronCount, NeuronCount/* + NeuronCount*/, HiddenLayerFunction, true));
+		_layers.back().NguenWidrow(-2, 2, -1, 1);
+		_layers.push_back(Layer(OutputCount, NeuronCount, LINE, true));
 		//_layers.back().NguenWidrow(-1, 1, -1, 1);
 		_countlayers = _layers.size();
 
-		LastDeltaSum.resize(3);
-		LastGradSum.resize(3);
-		eligibility.resize(3);
-		for (int i = 0; i < 3; ++i)
+		LastDeltaSum.resize(_countlayers);
+		LastGradSum.resize(_countlayers);
+		eligibility.resize(_countlayers);
+		for (int i = 0; i < _countlayers; ++i)
 		{
 			LastGradSum[i].Init(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
 			eligibility[i].Init(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
@@ -878,9 +882,9 @@ namespace NeuroNet
 				_layers[i].CalculateAxons();
 			}
 
-			//copy hidden into input (context)
+			/*//copy hidden into input (context)
 			for (int i = 1; i <= _layers[1].Axons.GetHorizontalSize(); ++i)
-				_layers[0].States(0, _layers[0].States.GetHorizontalSize() - i) = _layers[1].Axons(0, _layers[1].Axons.GetHorizontalSize() - i);
+				_layers[0].States(0, _layers[0].States.GetHorizontalSize() - i) = _layers[1].Axons(0, _layers[1].Axons.GetHorizontalSize() - i);*/
 		}
 		catch (std::exception ex)
 		{
@@ -955,9 +959,9 @@ void MyPlayer::Init()
 	nets.resize(Actions::COUNT);
 	for (int i = 0; i < nets.size(); ++i)
 	{
-		debug << "net " << i << endl;
-		nets[i].Init(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM);
-		debug << "net " << i << "inited" << endl << endl;
+		//	debug << "net " << i << endl;
+		nets[i].Init(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
+		//	debug << "net " << i << "inited" << endl << endl;
 	}
 	//net.Init(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
 }
@@ -973,10 +977,13 @@ bool check(Element *player, double x, double y, double angle, double step_angle)
 			sqrt(vx*vx + vy*vy)
 			*sqrt(vx2*vx2 + vy2*vy2)
 			);
+	cosa = max(-1.0 + EPS, cosa);
+	cosa = min(1.0 - EPS, cosa);
 	double angleB = acos(cosa);
-	
-	debug << " in check cosa = " << cosa << " angle = " << angleB << " result = " << (abs(angleB) <= step_angle / 2.0);
-	return abs(angleB) <= step_angle / 2.0;
+	if (angleB < -FLT_MAX)
+		int y = 0;
+	//debug << " in check cosa = " << cosa << " angle = " << angleB << " result = " << (abs(angleB) <= step_angle / 2.0);
+	return abs(angleB) <= step_angle / 2.0 + EPS;
 }
 
 
@@ -989,25 +996,24 @@ bool check(Element *player, Element *elem, double angle, double step_angle)
 enum ElementType { TFOOD, TENEMY, TBLOCK, TCOUNT };
 string elty[] = { "FOOD", "ENEMY", "BLOCK", "COUNT" };
 
-
 pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, double step_angle)
 {
-	debug << "start" << endl;
+	//debug << "start" << endl;
 	double x, y;
 	double x0 = me->GetX();
 	double y0 = me->GetY();
 	double k = tan(angle);
 	double angleB;
-	debug << "inited" << endl;
+	//debug << "inited" << endl;
 
 	//Y = 0, x = 0..getw
 	double dist = DBL_MAX;
 	double min_dist = DBL_MAX;
 	ElementType cur_type = ElementType::TENEMY;
-	debug << "before if" << endl;
+	//debug << "before if" << endl;
 	if (abs(angle - M_PI / 2) <= DBL_EPSILON || abs(angle - 3 * M_PI / 2) <= DBL_EPSILON)
 	{
-		debug << "in first if" << endl;
+		//debug << "in first if" << endl;
 		//пересечение только с горизонтальными сторонами
 		dist = min(dist, me->GetY());
 		dist = min(dist, w->GetHeight() - me->GetY());
@@ -1019,7 +1025,7 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 	}
 	else if (abs(angle) <= DBL_EPSILON || abs(angle - M_PI) <= DBL_EPSILON)
 	{
-		debug << "in second if" << endl;
+		//debug << "in second if" << endl;
 		//пересечение только с вертилкальными сторонами
 		dist = min(dist, me->GetX());
 		dist = min(dist, w->GetWidth() - me->GetX());
@@ -1031,7 +1037,7 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 	}
 	else
 	{
-		debug << "in else" << endl;
+		//debug << "in else" << endl;
 		//случайные пересечения
 		/*
 		система:
@@ -1046,45 +1052,45 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 		double b = y0 - k*x0;
 		double y = 0.0;
 		double x = (y - b) / k;
-		debug << "1xy b = " << b << " x = " << x << " y = " << y;
-		if (x >= 0.0 && x <= w->GetWidth() && check(me, x, y, angle, step_angle))
+		//debug << "1xy b = " << b << " x = " << x << " y = " << y;
+		if (x >= -EPS && x <= w->GetWidth() + EPS && check(me, x, y, angle, step_angle))
 		{
-			debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
+			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		debug << endl;
+		//debug << endl;
 		//y=geth
 		y = w->GetHeight();
 		x = (y - b) / k;
-		debug << "2xy b = " << b << " x = " << x << " y = " << y;
-		if (x >= 0.0 && x <= w->GetWidth() && check(me, x, y, angle, step_angle))
+		//debug << "2xy b = " << b << " x = " << x << " y = " << y;
+		if (x >= -EPS && x <= w->GetWidth() + EPS && check(me, x, y, angle, step_angle))
 		{
-			debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
+			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		debug << endl;
+		//debug << endl;
 
 		//x=0
 		x = 0.0;
 		y = k*x + b;
-		debug << "3xy b = " << b << " x = " << x << " y = " << y;
-		if (y >= 0.0 && y <= w->GetHeight() && check(me, x, y, angle, step_angle))
+		//debug << "3xy b = " << b << " x = " << x << " y = " << y;
+		if (y >= -EPS && y <= w->GetHeight() + EPS && check(me, x, y, angle, step_angle))
 		{
-			debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
+			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		debug << endl;
+		//debug << endl;
 
 		//x=getw
 		x = w->GetWidth();
 		y = k*x + b;
-		debug << "4xy b = " << b << " x = " << x << " y = " << y;
-		if (y >= 0.0 && y <= w->GetHeight() && check(me, x, y, angle, step_angle))
+		//debug << "4xy b = " << b << " x = " << x << " y = " << y;
+		if (y >= -EPS && y <= w->GetHeight() + EPS && check(me, x, y, angle, step_angle))
 		{
-			debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
+			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		debug << endl; 
+		//debug << endl;
 
 		if (min_dist > dist)
 		{
@@ -1092,9 +1098,9 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 			cur_type = ElementType::TBLOCK;
 		}
 	}
-	debug << "return" << endl;
+	//debug << "return" << endl;
 
-	debug << min_dist << " " << elty[cur_type] << endl;
+	//debug << min_dist << " " << elty[cur_type] << endl;
 	return make_pair(min_dist, cur_type);
 }
 
@@ -1121,7 +1127,11 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 				min_dist = dist;
 				cur_type = ElementType::TFOOD;
 			}
+
 		}
+
+		if (cur_type == TENEMY)
+			int y = 0;
 
 		//block
 		for each (auto cur in w->GetBlocks())
@@ -1133,17 +1143,21 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 				cur_type = ElementType::TBLOCK;
 			}
 		}
-
+		if (cur_type == TENEMY)
+			int y = 0;
 
 
 		auto res = getDistanceOnWall(me, w, angle, step_angle);
+		if (res.second == TENEMY)
+			int y = 0;
 
 		if (min_dist > res.first)
 		{
 			min_dist = res.first;
 			cur_type = res.second;
 		}
-
+		if (cur_type == TENEMY)
+			int y = 0;
 		inputs(0, eye) = min_dist;
 		inputs(0, eye + 1) = cur_type;
 
@@ -1168,7 +1182,7 @@ void MyPlayer::Move()
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
 	debug << inputs << endl;
-	r = GetHealth() * GetFullness() * 1.0 / 300000;
+	r = GetFullness();
 
 	int action = -1;
 	int rnd = dist(eng);
@@ -1176,7 +1190,6 @@ void MyPlayer::Move()
 	{
 		//nets[lastAction].CalcGradDelta(r);
 		//nets[lastAction].AddTest(vector<double>(1, r));
-		int Epoch = 5;
 		for (int i = 0; i < Actions::COUNT; ++i)
 		{
 			nets[i].AddTest(vector<double>(1, r));
@@ -1186,18 +1199,23 @@ void MyPlayer::Move()
 			break;
 			}*/
 		}
-		while (Epoch--)
+		//nets[lastAction].MCQLCorrect();
+		if (tick % 5 == 0)
 		{
-			if (nets[lastAction].RunTrainingSetOffline() < 1e-2)
-				break;
+		int Epoch = 20;
+			while (Epoch--)
+			{
+				if (nets[lastAction].RunTrainingSetOffline() < 1e-2)
+					break;
+			}
 		}
-		nets[lastAction].MCQLCorrect();
 	}
 
 	debug << "R = " << r << endl;
 	if ((dist(eng) % 17) < 3)
 	{
 		debug << "RAND: " << endl;;
+		Q = r;
 		action = rnd % Actions::COUNT;
 	}
 	else
@@ -1227,7 +1245,7 @@ void MyPlayer::Move()
 	lastAction = action;
 	lastQ = Q;
 
-	if (GetHealth() + GetFullness() < 15)
+	if (GetHealth() < 15)
 	{
 		for (int i = 0; i < Actions::COUNT; ++i)
 		{
@@ -1235,92 +1253,3 @@ void MyPlayer::Move()
 		}
 	}
 }
-
-#ifdef _DEBUG
-int main()
-{
-	double asdsa3 = acos(1.0);
-	double asdsa = acos(-1.0);
-	double asdsa2 = acos(-0.99999999);
-	MyPlayer *me = new MyPlayer();
-	double x, y;
-	double x0 = me->GetX();
-	double y0 = me->GetY();
-	ElementType cur_type;
-	double dist = DBL_MAX;
-	double min_dist = DBL_MAX;
-	double angle = 0.0;
-	double step_angle = 2 * M_PI / 8;
-	double k = tan(angle);
-	double meGetY = 20;
-	double meGetX = 50;
-	double wGetHeight = 480;
-	double wGetWidth = 640;
-	//Y = 0, x = 0..getw
-	dist = DBL_MAX;
-	if (abs(angle - M_PI / 2) <= DBL_EPSILON || abs(angle - 3 * M_PI / 2) <= DBL_EPSILON)
-	{
-		//пересечение только с горизонтальными сторонами
-		dist = min(dist, meGetY);
-		dist = min(dist, wGetHeight - meGetY);
-		if (min_dist > dist)
-		{
-			min_dist = dist;
-			cur_type = ElementType::TBLOCK;
-		}
-	}
-	else if (abs(angle) <= DBL_EPSILON || abs(angle - M_PI) <= DBL_EPSILON)
-	{
-		//пересечение только с вертилкальными сторонами
-		dist = min(dist, meGetX);
-		dist = min(dist, wGetWidth - meGetX);
-		if (min_dist > dist)
-		{
-			min_dist = dist;
-			cur_type = ElementType::TBLOCK;
-		}
-	}
-	else
-	{
-		//случайные пересечения
-		/*
-		система:
-		y = 0, при 0.0 <= x <= getw();
-		y = geth(), при 0.0 <= x <= getw();
-
-		x = 0, при 0.0 <= y <= geth();
-		x = getw(), при 0.0 <= y <= geth();
-		*/
-
-		//y = 0
-		double b = y0 - k*x0;
-		double y = 0.0;
-		double x = (y - b) / k;
-		if (x >= 0.0 && x <= wGetWidth && check(me, x, y, angle, step_angle))
-			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
-		//y=geth
-		y = wGetHeight;
-		x = (y - b) / k;
-		if (x >= 0.0 && x <= wGetWidth && check(me, x, y, angle, step_angle))
-			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - b)*(y - b)));
-
-		//x=0
-		x = 0.0;
-		y = k*x + b;
-		if (y >= 0.0 && y <= wGetHeight && check(me, x, y, angle, step_angle))
-			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - b)*(y - b)));
-
-		//x=getw
-		x = wGetWidth;
-		y = k*x + b;
-		if (y >= 0.0 && y <= wGetHeight && check(me, x, y, angle, step_angle))
-			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - b)*(y - b)));
-		if (min_dist > dist)
-		{
-			min_dist = dist;
-			cur_type = ElementType::TBLOCK;
-		}
-	}
-	return 0;
-}
-#endif
