@@ -35,7 +35,7 @@ void World::Run() {
 	RenderFull();
 	//debugout << "First render" << endl;
 
-	int TickCount = 5000;
+	int TickCount = 500000;
 	
 	for (CurTime = 0; CurTime <= TickCount; ++CurTime) {
 		if (stopFlag) return;

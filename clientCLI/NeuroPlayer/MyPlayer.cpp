@@ -36,7 +36,7 @@ const int PLAYER_COUNT = 1;
 //Neural config
 const int SENSOR_COUNT = 8;
 const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
-const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT*1.5;
+const int HIDDEN_NEURON_COUNT = 40;
 const int OUTPUT_NEURON_COUNT = 1;
 
 
@@ -91,6 +91,8 @@ namespace NeuroNet
 
 		friend std::ostream& operator<< (std::ostream &os, const Matrix2d &m);
 		friend Matrix2d sqrt(const Matrix2d&rhs);
+
+		void fill(double val);
 	};
 
 	struct Problem
@@ -120,13 +122,15 @@ namespace NeuroNet
 		Matrix2d Delta;
 		Matrix2d LastDelta;
 		Matrix2d Grad;
+		Matrix2d GradSum;
+		Matrix2d DeltaSum;
 		Matrix2d LastGrad;
 		Matrix2d CorrectVal;
 		Matrix2d BiasCorrectVal;
-		Matrix2d GetDiff();
 		Matrix2d Weights;
 		Matrix2d Bias;
-
+		Matrix2d LastDeltaSum;
+		Matrix2d LastGradSum;
 
 		//----------------------------------
 		//Functions
@@ -134,14 +138,13 @@ namespace NeuroNet
 		void CalculateStates(Layer &prevLayer);
 		void CalculateAxons();
 		void NguenWidrow(double Xmin, double Xmax, double Ymin, double Ymax);
+		Matrix2d GetDiff();
 	};
 
 	class ElmanNetwork
 	{
 	protected:
 		std::vector<Layer> _layers;
-		std::vector<Matrix2d> LastDeltaSum;
-		std::vector<Matrix2d> LastGradSum;
 		int _countlayers;
 	public:
 		ElmanNetwork() {};
@@ -159,7 +162,7 @@ namespace NeuroNet
 		double CalculateError(Problem& test, bool print = false);
 		void PrintProblemResult(Problem& test);
 		void ResilientPropagation();
-		void ResilientPropagation(std::vector<Matrix2d>& PrevSumGrad, std::vector<Matrix2d>& SumGrad, std::vector<Matrix2d>& PrevSumDelta, std::vector<Matrix2d>& SumDelta);
+		void ResilientPropagationOffline();
 		void CalcGradDelta(double output);
 		void CalcGradDelta(std::vector<double> output);
 		void CalcGradDelta(Matrix2d &output);
@@ -412,6 +415,13 @@ namespace NeuroNet
 		return _m[i][j];
 	}
 
+	void Matrix2d::fill(double val)
+	{
+		for (int i = 0; i < _m.size(); ++i)
+			for (int j = 0; j < _m[i].size(); ++j)
+				_m[i][j] = val;
+	}
+
 	std::ostream & operator<<(std::ostream & os, const Matrix2d & m)
 	{
 		for (int j = 0; j < m.GetVerticalSize(); ++j)
@@ -490,6 +500,11 @@ namespace NeuroNet
 		Grad.Init(neuronCount, prevNeuronCount);
 		LastGrad.Init(neuronCount, prevNeuronCount);
 		CorrectVal.InitRandom(neuronCount, prevNeuronCount, 0, 1);
+		DeltaSum.Init(1, neuronCount);
+		GradSum.Init(neuronCount, prevNeuronCount);
+		LastDeltaSum.Init(1, neuronCount);
+		LastGradSum.Init(neuronCount, prevNeuronCount);
+
 		if (bias)
 			Bias.InitRandom(1, neuronCount);
 		else Bias.Init(1, neuronCount);
@@ -581,13 +596,11 @@ namespace NeuroNet
 
 	double ElmanNetwork::RunTrainingSetOffline(bool print)
 	{
-		std::vector<Matrix2d> GradSum(_countlayers);
-		std::vector<Matrix2d> DeltaSum(_countlayers);
 
 		for (int i = 0; i < _countlayers; ++i)
 		{
-			GradSum[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
-			DeltaSum[i] = Matrix2d(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
+			_layers[i].GradSum.fill(0.0);
+			_layers[i].DeltaSum.fill(0.0);
 		}
 		int TestCount = 20;
 
@@ -602,8 +615,8 @@ namespace NeuroNet
 			//debug << "AfterCalc " << itest << std::endl;
 			for (int i = 1; i < _countlayers; ++i)
 			{
-				GradSum[i] += _layers[i].Grad;
-				DeltaSum[i] += _layers[i].Delta;
+				_layers[i].GradSum += _layers[i].Grad;
+				_layers[i].DeltaSum += _layers[i].Delta;
 			}
 			if (print) PrintProblemResult(TrainingSet[itest]);
 		}
@@ -611,13 +624,16 @@ namespace NeuroNet
 
 		double normGrad = 0.0;
 		for (int i = 0; i < _countlayers; ++i)
-			normGrad += sqrt(GradSum[i] * !GradSum[i]).sum();
+			normGrad += sqrt(_layers[i].GradSum * !_layers[i].GradSum).sum();
 
 		if (normGrad < 1e-6)
 			return 0.0;
-		ResilientPropagation(LastGradSum, GradSum, LastDeltaSum, DeltaSum);
-		LastGradSum = GradSum;
-		LastDeltaSum = DeltaSum;
+		ResilientPropagationOffline();
+		for (int i = 0; i < _countlayers; ++i)
+		{
+			_layers[i].LastGradSum = _layers[i].GradSum;
+			_layers[i].LastDeltaSum = _layers[i].DeltaSum;
+		}
 
 
 		double error = 0.0;
@@ -706,17 +722,17 @@ namespace NeuroNet
 		return error;
 	}
 
-	void ElmanNetwork::ResilientPropagation(std::vector<Matrix2d>& PrevSumGrad, std::vector<Matrix2d>& SumGrad, std::vector<Matrix2d>& PrevSumDelta, std::vector<Matrix2d>& SumDelta)
+	void ElmanNetwork::ResilientPropagationOffline()
 	{
 		const double EttaPlus = 1.2, EttaMinus = 0.5;
 		for (int i = 1; i < _countlayers; ++i)
 		{
-			for (int j = 0; j < SumGrad[i].GetVerticalSize(); ++j)
+			for (int j = 0; j < _layers[i].GradSum.GetVerticalSize(); ++j)
 			{
-				for (int k = 0; k < SumGrad[i].GetHorizontalSize(); ++k)
+				for (int k = 0; k < _layers[i].GradSum.GetHorizontalSize(); ++k)
 				{
 					double cur_correct = 0.0;
-					double cur_mult = SumGrad[i](j, k) * PrevSumGrad[i](j, k);
+					double cur_mult = _layers[i].GradSum(j, k) * _layers[i].LastGradSum(j, k);
 					if (cur_mult == 0.0)
 						cur_correct = getRand(0, 1);
 					else if (cur_mult > 0.0)
@@ -726,19 +742,19 @@ namespace NeuroNet
 
 					_layers[i].CorrectVal(j, k) = cur_correct;
 
-					if (SumGrad[i](j, k) == 0.0) continue;
+					if (_layers[i].GradSum(j, k) == 0.0) continue;
 
-					if (SumGrad[i](j, k) > 0)
+					if (_layers[i].GradSum(j, k) > 0)
 						_layers[i].Weights(j, k) += -cur_correct;
 					else
 						_layers[i].Weights(j, k) += cur_correct;
 				}
 			}
 
-			for (int j = 0; j < SumDelta[i].GetHorizontalSize(); ++j)
+			for (int j = 0; j < _layers[i].DeltaSum.GetHorizontalSize(); ++j)
 			{
 				double cur_correct = 0.0;
-				double cur_mult = SumDelta[i](0, j) * PrevSumDelta[i](0, j);
+				double cur_mult = _layers[i].DeltaSum(0, j) * _layers[i].LastDeltaSum(0, j);
 				if (cur_mult == 0.0)
 					cur_correct = getRand(0, 1);
 				else if (cur_mult > 0.0)
@@ -748,9 +764,9 @@ namespace NeuroNet
 
 				_layers[i].BiasCorrectVal(0, j) = cur_correct;
 
-				if (SumDelta[i](0, j) == 0.0) continue;
+				if (_layers[i].DeltaSum(0, j) == 0.0) continue;
 
-				if (SumDelta[i](0, j) > 0)
+				if (_layers[i].DeltaSum(0, j) > 0)
 					_layers[i].Bias(0, j) += -cur_correct;
 				else
 					_layers[i].Bias(0, j) += cur_correct;
@@ -850,26 +866,22 @@ namespace NeuroNet
 	void ElmanNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
 	{
 		_layers.clear();
-		_layers.push_back(Layer(InputCount/* + NeuronCount*/, 0, LINE));
-		_layers.push_back(Layer(NeuronCount, InputCount/* + NeuronCount*/, HiddenLayerFunction, true));
+		_layers.push_back(Layer(InputCount + NeuronCount, 0, LINE));
+		_layers.push_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction, true));
 		_layers.back().NguenWidrow(-2, 2, -1, 1);
-		_layers.push_back(Layer(NeuronCount, NeuronCount/* + NeuronCount*/, HiddenLayerFunction, true));
+		_layers.push_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction, true));
+		_layers.back().NguenWidrow(-2, 2, -1, 1); 
+		_layers.push_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction, true));
 		_layers.back().NguenWidrow(-2, 2, -1, 1);
 		_layers.push_back(Layer(OutputCount, NeuronCount, LINE, true));
 		//_layers.back().NguenWidrow(-1, 1, -1, 1);
 		_countlayers = _layers.size();
 
-		LastDeltaSum.resize(_countlayers);
-		LastGradSum.resize(_countlayers);
 		eligibility.resize(_countlayers);
 		for (int i = 0; i < _countlayers; ++i)
-		{
-			LastGradSum[i].Init(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
 			eligibility[i].Init(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
-			LastDeltaSum[i].Init(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
-		}
 
-		debug << _layers[1].Weights(0, 0) << endl << endl;;
+		//debug << _layers[1].Weights(0, 0) << endl << endl;;
 	}
 
 	void ElmanNetwork::Run()
@@ -882,9 +894,9 @@ namespace NeuroNet
 				_layers[i].CalculateAxons();
 			}
 
-			/*//copy hidden into input (context)
+			//copy hidden into input (context)
 			for (int i = 1; i <= _layers[1].Axons.GetHorizontalSize(); ++i)
-				_layers[0].States(0, _layers[0].States.GetHorizontalSize() - i) = _layers[1].Axons(0, _layers[1].Axons.GetHorizontalSize() - i);*/
+				_layers[0].States(0, _layers[0].States.GetHorizontalSize() - i) = _layers[1].Axons(0, _layers[1].Axons.GetHorizontalSize() - i);
 		}
 		catch (std::exception ex)
 		{
@@ -909,15 +921,17 @@ namespace NeuroNet
 	}
 	void ElmanNetwork::AddTest(vector<double> ideal)
 	{
-		TrainingSet.resize(TrainingSet.size() + 1);
-		TrainingSet.back().inputs = _layers[0].States;
-		TrainingSet.back().outputs = ideal;
+		auto pr = Problem();
+		pr.inputs = _layers[0].States;
+		pr.outputs = ideal;
+		TrainingSet.push_back(pr);
 	}
 	void ElmanNetwork::AddTest(Matrix2d ideal)
 	{
-		TrainingSet.resize(TrainingSet.size() + 1);
-		TrainingSet.back().inputs = _layers[0].States;
-		TrainingSet.back().outputs = ideal;
+		auto pr = Problem();
+		pr.inputs = _layers[0].States;
+		pr.outputs = ideal;
+		TrainingSet.push_back(pr);
 	}
 }
 
@@ -1181,7 +1195,7 @@ void MyPlayer::Move()
 	///////////////////////// Init input vector /////////////////////////
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
-	debug << inputs << endl;
+	//debug << inputs << endl;
 	r = GetFullness();
 
 	int action = -1;
@@ -1211,10 +1225,10 @@ void MyPlayer::Move()
 		}
 	}
 
-	debug << "R = " << r << endl;
+//	debug << "R = " << r << endl;
 	if ((dist(eng) % 17) < 3)
 	{
-		debug << "RAND: " << endl;;
+	//	debug << "RAND: " << endl;;
 		Q = r;
 		action = rnd % Actions::COUNT;
 	}
@@ -1226,7 +1240,7 @@ void MyPlayer::Move()
 		{
 			nets[i].Run(inputs);
 			double curQ = nets[i].GetOut().sum();
-			debug << curQ << " " << i << endl;
+			//debug << curQ << " " << i << endl;
 
 			if (Q < curQ)
 			{
@@ -1236,7 +1250,7 @@ void MyPlayer::Move()
 		}
 	}
 
-	debug << "SELECT " << Q << " " << action << endl << "=================================================================" << endl;
+	//debug << "SELECT " << Q << " " << action << endl << "=================================================================" << endl;
 
 
 	DoAction(this, (Actions)action);
@@ -1245,11 +1259,13 @@ void MyPlayer::Move()
 	lastAction = action;
 	lastQ = Q;
 
-	if (GetHealth() < 15)
+	if (tick % 1000 == 0)
 	{
+		debug << endl << endl << "======================tick " << tick << "========================================================" << endl;
 		for (int i = 0; i < Actions::COUNT; ++i)
 		{
 			nets[i].debuginfo();
 		}
+		debug.flush();
 	}
 }
