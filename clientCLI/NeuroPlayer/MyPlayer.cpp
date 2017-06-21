@@ -10,6 +10,7 @@
 #include <omp.h>
 #include <random>
 #include <memory>
+#include <deque>
 
 using namespace std;
 #define EPS (1e-4)
@@ -40,6 +41,10 @@ const int SENSOR_COUNT = 8;
 const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
 const int HIDDEN_NEURON_COUNT = 40;
 const int OUTPUT_NEURON_COUNT = 1;
+const int TEST_COUNT = 300;
+const int TRAIN_EPOCH = 10;
+const int TRAIN_PERIOD = 5;
+const double TRAIN_EPS = 1e-1;
 
 namespace NeuroNet
 {
@@ -106,7 +111,7 @@ namespace NeuroNet
 	};
 }
 
-vector<NeuroNet::Problem> TrainingSet;
+deque<NeuroNet::Problem> TrainingSet;
 
 namespace NeuroNet
 {
@@ -389,7 +394,7 @@ namespace NeuroNet
 
 	Matrix2d& Matrix2d::operator=(const Matrix2d & rhs)
 	{
-		if (_m != nullptr && rhs._m == _m)
+		if (rhs._m == _m)
 		{
 			return *this;
 		}
@@ -672,36 +677,19 @@ namespace NeuroNet
 			_layers[i].GradSum.Fill(0.0);
 			_layers[i].DeltaSum.Fill(0.0);
 		}
-		int TestCount = 2;
-		if (TrainingSet.size() <= TestCount)
+
+		for (int t = 0; t < TrainingSet.size(); ++t)
 		{
-			for (int t = 0; t < TrainingSet.size(); ++t)
+			Run(TrainingSet[t].inputs);
+			CalcGradDelta(TrainingSet[t].outputs);
+			for (int i = 1; i < _countlayers; ++i)
 			{
-				Run(TrainingSet[t].inputs);
-				CalcGradDelta(TrainingSet[t].outputs);
-				for (int i = 1; i < _countlayers; ++i)
-				{
-					_layers[i].GradSum += _layers[i].Grad;
-					_layers[i].DeltaSum += _layers[i].Delta;
-				}
-				if (print) PrintProblemResult(TrainingSet[t]);
+				_layers[i].GradSum += _layers[i].Grad;
+				_layers[i].DeltaSum += _layers[i].Delta;
 			}
+			if (print) PrintProblemResult(TrainingSet[t]);
 		}
-		else
-		{
-			while (TestCount--)
-			{
-				int itest = dist(eng) % TrainingSet.size();
-				Run(TrainingSet[itest].inputs);
-				CalcGradDelta(TrainingSet[itest].outputs);
-				for (int i = 1; i < _countlayers; ++i)
-				{
-					_layers[i].GradSum += _layers[i].Grad;
-					_layers[i].DeltaSum += _layers[i].Delta;
-				}
-				if (print) PrintProblemResult(TrainingSet[itest]);
-			}
-		}
+
 		if (print) std::cout << std::endl << "=======CORRECT==========" << std::endl;
 
 		double normGrad = 0.0;
@@ -992,6 +980,8 @@ namespace NeuroNet
 	}
 	void ElmanNetwork::AddTest(const vector<double> &ideal) const
 	{
+		if (TrainingSet.size() + 1 == TEST_COUNT)
+			TrainingSet.pop_front();
 		auto pr = Problem();
 		pr.inputs = _layers[0].States;
 		pr.outputs = ideal;
@@ -999,6 +989,8 @@ namespace NeuroNet
 	}
 	void ElmanNetwork::AddTest(Matrix2d& ideal) const
 	{
+		if (TrainingSet.size() + 1 == TEST_COUNT)
+			TrainingSet.pop_front();
 		auto pr = Problem();
 		pr.inputs = _layers[0].States;
 		pr.outputs = ideal;
@@ -1247,22 +1239,14 @@ void MyPlayer::Move()
 
 	if (!FirstStep)
 	{
-		/*int maxtests = 500;
-		int mintest = 100;
-		if (TrainingSet.size() > maxtests)
-		{
-		vector<NeuroNet::Problem> vp;
-		int ct = mintest;
-		while (ct--)
-		vp.push_back(TrainingSet[dist(eng) % TrainingSet.size()]);
-		}*/
+		int test = TrainingSet.size();
 		nets[lastAction].AddTest(vr);
-		if (tick % 5 == 0)
+		if (tick % TRAIN_PERIOD == 0)
 		{
-			int Epoch = 2;
+			int Epoch = TRAIN_EPOCH;
 			while (Epoch--)
 			{
-				if (nets[lastAction].RunTrainingSetOffline() < 1e-1)
+				if (nets[lastAction].RunTrainingSetOffline() < TRAIN_EPS)
 					break;
 			}
 		}
