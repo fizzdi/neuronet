@@ -8,7 +8,7 @@ Matrix2d Layer::sigm_function(Matrix2d& x)
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < m; ++j)
 			res.at(i, j) = x.at(i, j) <= -35 ? x.at(i, j) = 10e-15 : 1.0 / (1.0 + exp(-x.at(i, j)));
-	return res;
+	return std::move(res);
 }
 
 Matrix2d Layer::tanh_function(Matrix2d& x)
@@ -21,7 +21,7 @@ Matrix2d Layer::tanh_function(Matrix2d& x)
 			//res(i,j) = (exp(2 * x(i,j)) - 1.0) / (exp(2 * x(i,j)) + 1.0);
 			res.at(i, j) = std::tanh(x.at(i, j));
 		}
-	return res;
+	return std::move(res);
 }
 
 Matrix2d Layer::diff_tanh_function(Matrix2d& x)
@@ -31,7 +31,7 @@ Matrix2d Layer::diff_tanh_function(Matrix2d& x)
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < m; ++j)
 			res.at(i, j) = 1.0 - x.at(i, j) * x.at(i, j);
-	return res;
+	return std::move(res);
 }
 
 Matrix2d Layer::diff_sigm_function(Matrix2d& x)
@@ -41,7 +41,7 @@ Matrix2d Layer::diff_sigm_function(Matrix2d& x)
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < m; ++j)
 			res.at(i, j) = (1.0 - x.at(i, j)) * x.at(i, j);
-	return res;
+	return std::move(res);
 }
 
 Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction)
