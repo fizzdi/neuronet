@@ -87,6 +87,9 @@ namespace NeuroNet
 		Matrix2d& operator= (Matrix2d &&rhs);
 		Matrix2d& operator= (const std::vector<double> &rhs);
 
+		bool operator== (Matrix2d &rhs);
+
+
 		Matrix2d abs() const;
 		Matrix2d multiplication(const Matrix2d &rhs) const;
 		const double sum() const;
@@ -431,6 +434,11 @@ namespace NeuroNet
 		_m = new double[n*m];
 		memcpy_s(_m, n*m * sizeof(*_m), rhs.data(), n*m * sizeof(*rhs.data()));
 		return *this;
+	}
+
+	bool Matrix2d::operator==(Matrix2d & rhs)
+	{
+		return n == rhs.n && m == rhs.m && _m == rhs._m;
 	}
 
 	Matrix2d Matrix2d::abs() const
