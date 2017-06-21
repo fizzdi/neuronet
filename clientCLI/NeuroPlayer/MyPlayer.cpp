@@ -13,7 +13,7 @@
 
 using namespace std;
 #define EPS (1e-4)
-#define ERRORDEF "ERROR##$#"
+#define ERRORDEF "###ERROR"
 ofstream debug("neurodebug.txt");
 std::mt19937 eng;
 std::uniform_int_distribution<> dist(1, 50000);
@@ -203,19 +203,14 @@ namespace NeuroNet
 		this->n = rhs.n;
 		this->m = rhs.m;
 		_m = new double[n*m];
-		memcpy_s(_m, n*m * sizeof(_m), rhs._m, n*m * sizeof(rhs._m));
+		memcpy_s(_m, n*m * sizeof(*_m), rhs._m, n*m * sizeof(*rhs._m));
 	}
 
 	Matrix2d::Matrix2d(Matrix2d && rhs)
 	{
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		_m = move(rhs._m);
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		n = rhs.n;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		m = rhs.m;
-
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		rhs._m = nullptr;
 	}
 
@@ -231,7 +226,7 @@ namespace NeuroNet
 		this->n = 1;
 		this->m = rhs.size();
 		_m = new double[m];
-		memcpy_s(_m, n*m * sizeof(_m), rhs.data(), n*m * sizeof(rhs.data()));
+		memcpy_s(_m, n*m * sizeof(*_m), rhs.data(), n*m * sizeof(*rhs.data()));
 	}
 
 	void Matrix2d::Fill(double val)
@@ -283,7 +278,10 @@ namespace NeuroNet
 	Matrix2d& Matrix2d::operator+=(const Matrix2d & rhs)
 	{
 		if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
+		{
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
 			throw std::logic_error("Wrong sizes in addition operation");
+		}
 
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
@@ -314,7 +312,10 @@ namespace NeuroNet
 	Matrix2d& Matrix2d::operator-=(const Matrix2d & rhs)
 	{
 		if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
+		{
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
 			throw std::logic_error("Wrong sizes in subtraction operation");
+		}
 
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
@@ -342,12 +343,16 @@ namespace NeuroNet
 	Matrix2d Matrix2d::operator*(const Matrix2d & rhs) const
 	{
 		if (GetHorizontalSize() != rhs.GetVerticalSize())
+		{
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
 			throw std::logic_error("Wrong sizes in multiplication operation");
+		}
 
 		int n = GetVerticalSize();
 		int m = rhs.GetHorizontalSize();
 		int nm = GetHorizontalSize();
 		Matrix2d res(n, m);
+		res.Fill(0.0);
 
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
@@ -378,57 +383,37 @@ namespace NeuroNet
 		_m = new double[n*m];
 
 		for (int i = 0; i < (int)rhs.size(); ++i)
-			memcpy_s(_m + (i*m) * sizeof(_m), m * sizeof(_m), rhs.data(), m * sizeof(rhs.data()));
+			memcpy_s(_m + (i*m) * sizeof(*_m), m * sizeof(*_m), rhs.data(), m * sizeof(*rhs.data()));
 		return *this;
 	}
 
 	Matrix2d& Matrix2d::operator=(const Matrix2d & rhs)
 	{
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &rhs << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _m << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << rhs._m << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << (rhs._m == _m) << endl;
 		if (_m != nullptr && rhs._m == _m)
 		{
-			debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 			return *this;
 		}
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 
-			if (_m != nullptr)
-				delete[](_m);
-			debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		if (_m != nullptr)
+			delete[](_m);
 
 
 		this->n = rhs.n;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		this->m = rhs.m;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		_m = new double[n*m];
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
-		memcpy_s(_m, n*m * sizeof(_m), rhs._m, n*m * sizeof(rhs._m));
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		memcpy_s(_m, n*m * sizeof(*_m), rhs._m, n*m * sizeof(*rhs._m));
 		return *this;
 	}
 
 	Matrix2d & Matrix2d::operator=(Matrix2d && rhs)
 	{
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		if (this->_m == rhs._m) return *this;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		_m = move(rhs._m);
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		n = rhs.n;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		m = rhs.m;
 
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		rhs._m = nullptr;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		return *this;
 	}
 
@@ -439,7 +424,7 @@ namespace NeuroNet
 		this->n = 1;
 		this->m = rhs.size();
 		_m = new double[n*m];
-		memcpy_s(_m, n*m * sizeof(_m), rhs.data(), n*m * sizeof(rhs.data()));
+		memcpy_s(_m, n*m * sizeof(*_m), rhs.data(), n*m * sizeof(*rhs.data()));
 		return *this;
 	}
 
@@ -457,7 +442,10 @@ namespace NeuroNet
 	Matrix2d Matrix2d::multiplication(const Matrix2d & rhs) const
 	{
 		if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
+		{
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
 			throw std::logic_error("Wrong sizes in multiplication operation");
+		}
 
 		Matrix2d res(rhs.n, rhs.m);
 		for (int i = 0; i < rhs.n; ++i)
@@ -477,18 +465,20 @@ namespace NeuroNet
 
 	double & Matrix2d::at(const int i, const int j)
 	{
-		if (i*m + j >= n*m)
+		if (i >= n || j >= m)
 		{
-			debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
+			throw std::logic_error("Wrong sizes in at operation");
 		}
 		return _m[i*m + j];
 	}
 
 	double Matrix2d::at(const int i, const int j) const
 	{
-		if (i*m + j >= n*m)
+		if (i >= n || j >= m)
 		{
-			debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
+			throw std::logic_error("Wrong sizes in at operation");
 		}
 		return _m[i*m + j];
 	}
@@ -900,20 +890,20 @@ namespace NeuroNet
 	void ElmanNetwork::MCQLCorrect()
 	{
 		/*try {
-			for (int i = 1; i < _countlayers; ++i)
-				_layers[i].Weights += eligibility[i] * ALPHA*(r + GAMMA*Q - lastQ);
+		for (int i = 1; i < _countlayers; ++i)
+		_layers[i].Weights += eligibility[i] * ALPHA*(r + GAMMA*Q - lastQ);
 
-			std::vector<double> out;
-			out.push_back(Q);
-			CalcGradDelta(out);
+		std::vector<double> out;
+		out.push_back(Q);
+		CalcGradDelta(out);
 
-			for (int i = 1; i < _countlayers; ++i)
-				eligibility[i] = _layers[i].Grad + eligibility[i] * GAMMA*LAMBDA;
+		for (int i = 1; i < _countlayers; ++i)
+		eligibility[i] = _layers[i].Grad + eligibility[i] * GAMMA*LAMBDA;
 		}
 		catch (std::exception ex)
 		{
-			debug << "EXCEPTION: " << endl << ex.what() << endl;
-			throw new std::exception("Exit");
+		debug << "EXCEPTION: " << endl << ex.what() << endl;
+		throw new std::exception("Exit");
 		}*/
 	}
 
@@ -1002,39 +992,16 @@ namespace NeuroNet
 	}
 	void ElmanNetwork::AddTest(const vector<double> &ideal) const
 	{
-		debug << "before pr" << endl;
 		auto pr = Problem();
-		debug << "before pr.inputs1" << endl;
 		pr.inputs = _layers[0].States;
-		debug << "before pr.outputs" << endl;
 		pr.outputs = ideal;
-		debug << "before TrainingSet.emplace_back" << endl;
 		TrainingSet.emplace_back(pr);
 	}
 	void ElmanNetwork::AddTest(Matrix2d& ideal) const
 	{
-		debug << "NETS ADR" << this << endl;
-
-		debug << "NETS " << _layers.size() << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
-		debug << "NETS " << _layers.size() << endl;
 		auto pr = Problem();
-		debug << "NETS " << _layers.size() << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _layers.size() << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &_layers << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &_layers[0] << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &_layers[0].States << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _layers[0].States.GetHorizontalSize() << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _layers[0].States.GetVerticalSize() << endl;
-		debug << "NETS " << _layers.size() << endl;
 		pr.inputs = _layers[0].States;
-		debug << "NETS " << _layers.size() << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
-		debug << "NETS " << _layers.size() << endl;
 		pr.outputs = ideal;
-		debug << "NETS " << _layers.size() << endl;
-		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		TrainingSet.emplace_back(pr);
 	}
 }
@@ -1079,9 +1046,7 @@ void MyPlayer::Init()
 	nets.resize(Actions::COUNT);
 	for (int i = 0; i < nets.size(); ++i)
 	{
-		//	debug << "net " << i << endl;
 		nets[i] = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
-		//	debug << "net " << i << "inited" << endl << endl;
 	}
 	//net.InitFill(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
 }
@@ -1102,7 +1067,6 @@ bool check(Element *player, double x, double y, double angle, double step_angle)
 	double angleB = acos(cosa);
 	if (angleB < -FLT_MAX)
 		int y = 0;
-	//debug << " in check cosa = " << cosa << " angle = " << angleB << " result = " << (abs(angleB) <= step_angle / 2.0);
 	return abs(angleB) <= step_angle / 2.0 + EPS;
 }
 
@@ -1118,22 +1082,18 @@ string elty[] = { "FOOD", "ENEMY", "BLOCK", "COUNT" };
 
 pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, double step_angle)
 {
-	//debug << "start" << endl;
 	double x, y;
 	double x0 = me->GetX();
 	double y0 = me->GetY();
 	double k = tan(angle);
 	double angleB;
-	//debug << "inited" << endl;
 
 	//Y = 0, x = 0..getw
 	double dist = DBL_MAX;
 	double min_dist = DBL_MAX;
 	ElementType cur_type = ElementType::TENEMY;
-	//debug << "before if" << endl;
 	if (abs(angle - M_PI / 2) <= DBL_EPSILON || abs(angle - 3 * M_PI / 2) <= DBL_EPSILON)
 	{
-		//debug << "in first if" << endl;
 		//пересечение только с горизонтальными сторонами
 		dist = min(dist, me->GetY());
 		dist = min(dist, w->GetHeight() - me->GetY());
@@ -1145,7 +1105,6 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 	}
 	else if (abs(angle) <= DBL_EPSILON || abs(angle - M_PI) <= DBL_EPSILON)
 	{
-		//debug << "in second if" << endl;
 		//пересечение только с вертилкальными сторонами
 		dist = min(dist, me->GetX());
 		dist = min(dist, w->GetWidth() - me->GetX());
@@ -1157,7 +1116,6 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 	}
 	else
 	{
-		//debug << "in else" << endl;
 		//случайные пересечения
 		/*
 		система:
@@ -1172,45 +1130,33 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 		double b = y0 - k*x0;
 		double y = 0.0;
 		double x = (y - b) / k;
-		//debug << "1xy b = " << b << " x = " << x << " y = " << y;
 		if (x >= -EPS && x <= w->GetWidth() + EPS && check(me, x, y, angle, step_angle))
 		{
-			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		//debug << endl;
 		//y=geth
 		y = w->GetHeight();
 		x = (y - b) / k;
-		//debug << "2xy b = " << b << " x = " << x << " y = " << y;
 		if (x >= -EPS && x <= w->GetWidth() + EPS && check(me, x, y, angle, step_angle))
 		{
-			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		//debug << endl;
 
 		//x=0
 		x = 0.0;
 		y = k*x + b;
-		//debug << "3xy b = " << b << " x = " << x << " y = " << y;
 		if (y >= -EPS && y <= w->GetHeight() + EPS && check(me, x, y, angle, step_angle))
 		{
-			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		//debug << endl;
 
 		//x=getw
 		x = w->GetWidth();
 		y = k*x + b;
-		//debug << "4xy b = " << b << " x = " << x << " y = " << y;
 		if (y >= -EPS && y <= w->GetHeight() + EPS && check(me, x, y, angle, step_angle))
 		{
-			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		//debug << endl;
 
 		if (min_dist > dist)
 		{
@@ -1218,9 +1164,6 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 			cur_type = ElementType::TBLOCK;
 		}
 	}
-	//debug << "return" << endl;
-
-	//debug << min_dist << " " << elty[cur_type] << endl;
 	return make_pair(min_dist, cur_type);
 }
 
@@ -1240,10 +1183,8 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 		for each (auto cur in w->GetFood())
 		{
 			dist = me->GetDistanceTo(cur);
-			//debug << cur->GetX() << " " << cur->GetY() << endl;
 			if (check(me, cur, angle, step_angle) && dist < min_dist)
 			{
-				//debug << "food dist = " << dist << endl;
 				min_dist = dist;
 				cur_type = ElementType::TFOOD;
 			}
@@ -1281,7 +1222,6 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 		inputs.at(0, eye) = min_dist;
 		inputs.at(0, eye + 1) = cur_type;
 
-		//debug << "eye " << min_dist << " " << elty[cur_type] << endl;
 		eye += 2;
 		angle += step_angle;
 	}
@@ -1294,23 +1234,16 @@ int lasttest = -1;
 int tick = -1;
 void MyPlayer::Move()
 {
-	debug << "NETS " << nets[0]._layers.size() << " " << nets[1]._layers.size() << " " << nets[2]._layers.size() << " " << nets[3]._layers.size() << " " << endl;
 	tick++;
-	debug << "TICK " << tick << endl;
 
 	/////////////////////////////////////////////////////////////////////
 	///////////////////////// InitFill input vector /////////////////////////
 	inputs.Fill(-1.0);
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
-	debug << "after inputs set" << endl;
-	//debug << inputs << endl;
 	vr.at(0, 0) = GetFullness();
-	debug << "after fullnes" << endl;
-
 	int action = -1;
 	int rnd = dist(eng);
-	debug << "after rnd" << endl;
 
 	if (!FirstStep)
 	{
@@ -1318,18 +1251,12 @@ void MyPlayer::Move()
 		int mintest = 100;
 		if (TrainingSet.size() > maxtests)
 		{
-			vector<NeuroNet::Problem> vp;
-			int ct = mintest;
-			while (ct--)
-				vp.push_back(TrainingSet[dist(eng) % TrainingSet.size()]);
+		vector<NeuroNet::Problem> vp;
+		int ct = mintest;
+		while (ct--)
+		vp.push_back(TrainingSet[dist(eng) % TrainingSet.size()]);
 		}*/
-		debug << "before AddTest" << endl;
-		debug << "NETS " << nets[0]._layers.size() << " " << nets[1]._layers.size() << " " << nets[2]._layers.size() << " " << nets[3]._layers.size() << " " << endl;
-		debug << "NETS ADR act " << lastAction << endl;
-		debug << "NETS ADR old " << &nets[lastAction] << endl;
 		nets[lastAction].AddTest(vr);
-		debug << "NETS " << nets[0]._layers.size() << " " << nets[1]._layers.size() << " " << nets[2]._layers.size() << " " << nets[3]._layers.size() << " " << endl;
-		debug << "after AddTest" << endl;
 		if (tick % 5 == 0)
 		{
 			int Epoch = 2;
@@ -1341,27 +1268,19 @@ void MyPlayer::Move()
 		}
 	}
 
-	//	debug << "R = " << r << endl;
-	debug << "after check rnd" << endl;
 	if ((dist(eng) % 17) < 3)
 	{
-		//	debug << "RAND: " << endl;;
-
-		debug << "before at" << endl;
 		Q = vr.at(0, 0);
-		debug << "after at" << endl;
 		action = rnd % Actions::COUNT;
 	}
 	else
 	{
 
-		debug << "Before Q" << endl;
 		Q = -DBL_MAX;
 		for (int i = 0; i < nets.size(); ++i)
 		{
 			nets[i].Run(inputs);
 			double curQ = nets[i].GetOut().sum();
-			debug << curQ << " " << i << endl;
 
 			if (Q < curQ)
 			{
@@ -1369,21 +1288,12 @@ void MyPlayer::Move()
 				action = i;
 			}
 		}
-		debug << "After Q" << endl;
 	}
 
-	//debug << "SELECT " << Q << " " << action << endl << "=================================================================" << endl;
-
-
-	debug << "Before action" << endl;
 	DoAction(this, (Actions)action);
 	FirstStep = false;
-
-	debug << "after action" << endl;
 	lastAction = action;
 	lastQ = Q;
-	debug << "after ==" << endl;
-	debug.flush();
 	if (tick % 1000 == 0)
 	{
 		debug << endl << endl << "======================tick " << tick << "========================================================" << endl;

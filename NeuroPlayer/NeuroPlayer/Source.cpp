@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -5,12 +6,14 @@
 #include "MyPlayer.h"
 #include <fstream>
 #include <ctime>
-#include <exception>
 #include <climits>
 #include <omp.h>
 #include <random>
+#include <memory>
 
 using namespace std;
+#define EPS (1e-4)
+#define ERRORDEF "###ERROR"
 ofstream debug("neurodebug.txt");
 std::mt19937 eng;
 std::uniform_int_distribution<> dist(1, 50000);
@@ -18,7 +21,7 @@ std::uniform_int_distribution<> dist(1, 50000);
 const double ALPHA = 2.0;
 const double GAMMA = 0.99;
 const double LAMBDA = 0.5;
-double r;
+//double r;
 double Q;
 double lastQ = 0.0;
 int lastAction = 0;
@@ -35,58 +38,56 @@ const int PLAYER_COUNT = 1;
 //Neural config
 const int SENSOR_COUNT = 8;
 const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
-const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT * 1.5;
+const int HIDDEN_NEURON_COUNT = 40;
 const int OUTPUT_NEURON_COUNT = 1;
-
-
 
 namespace NeuroNet
 {
-	//activation function type
-	enum AFType { LINE, SIGM, TANH };
-
-	double getRand(double vmin, double vmax, bool integer = false);
-
 	class Matrix2d
 	{
 	private:
-		std::vector<std::vector<double>> _m;
+		double* _m;
+		int n, m;
 	public:
-		Matrix2d() {};
-		Matrix2d(int n, int m, double val = 0.0);
+		Matrix2d() { n = m = 0; _m = nullptr; };
+		~Matrix2d();
+		Matrix2d(const Matrix2d& rhs);
+		Matrix2d(Matrix2d&& rhs);
+		Matrix2d(int n, int m);
 		Matrix2d(const std::vector<double> &rhs);
-		void Init(int n, int m, double val = 0.0);
-		void InitRandom(int n, int m, double minv = -1.0, double maxv = 1.0);
+		void Fill(double val = 0.0);
+		void InitRandom(double minv = -1.0, double maxv = 1.0);
 
-		void Clear();
 		int GetHorizontalSize() const;
 		int GetVerticalSize() const;
 
 		Matrix2d operator! () const;
 		Matrix2d operator- () const;
 
-		Matrix2d operator+= (const Matrix2d &rhs);
+		Matrix2d& operator+= (const Matrix2d &rhs);
 		Matrix2d operator+ (const Matrix2d &rhs) const;
-		Matrix2d operator+= (const double rhs);
+		Matrix2d& operator+= (const double rhs);
 		Matrix2d operator+ (const double rhs) const;
 
-		Matrix2d operator-= (const Matrix2d &rhs);
+		Matrix2d& operator-= (const Matrix2d &rhs);
 		Matrix2d operator- (const Matrix2d &rhs) const;
-		Matrix2d operator-= (const double rhs);
+		Matrix2d& operator-= (const double rhs);
 		Matrix2d operator- (const double rhs) const;
 
 		Matrix2d operator* (const Matrix2d &rhs) const;
 		Matrix2d operator* (const double &rhs);
 
-		Matrix2d operator= (const std::vector<std::vector<double>> &rhs);
-		Matrix2d operator= (const Matrix2d &rhs);
-		Matrix2d operator= (const std::vector<double> &rhs);
+		Matrix2d& operator= (const std::vector<std::vector<double>> &rhs);
+		Matrix2d& operator= (const Matrix2d &rhs);
+		Matrix2d& operator= (Matrix2d &&rhs);
+		Matrix2d& operator= (const std::vector<double> &rhs);
 
 		Matrix2d abs() const;
 		Matrix2d multiplication(const Matrix2d &rhs) const;
 		const double sum() const;
 
-		double& operator() (const int i, const int j);
+		double& at(const int i, const int j);
+		double at(const int i, const int j) const;
 
 		friend std::ostream& operator<< (std::ostream &os, const Matrix2d &m);
 		friend Matrix2d sqrt(const Matrix2d&rhs);
@@ -103,64 +104,72 @@ namespace NeuroNet
 		Problem()
 		{};
 	};
+}
+
+vector<NeuroNet::Problem> TrainingSet;
+
+namespace NeuroNet
+{
+	//activation function type
+	enum AFType { LINE, SIGM, TANH };
+
+	double getRand(double vmin, double vmax, bool integer = false);
 
 	class Layer
 	{
 	private:
 		AFType _aftype;
 
-		Matrix2d sigm_function(Matrix2d m);
-		Matrix2d tanh_function(Matrix2d m);
-		Matrix2d diff_tanh_function(Matrix2d m);
-		Matrix2d diff_sigm_function(Matrix2d m);
+		Matrix2d sigm_function(Matrix2d& m);
+		Matrix2d tanh_function(Matrix2d& m);
+		Matrix2d diff_tanh_function(Matrix2d& m);
+		Matrix2d diff_sigm_function(Matrix2d& m);
 	public:
 		Matrix2d Axons;
 		Matrix2d States;
 		Matrix2d Delta;
 		Matrix2d LastDelta;
 		Matrix2d Grad;
+		Matrix2d GradSum;
+		Matrix2d DeltaSum;
 		Matrix2d LastGrad;
 		Matrix2d CorrectVal;
 		Matrix2d BiasCorrectVal;
-		Matrix2d GetDiff();
 		Matrix2d Weights;
 		Matrix2d Bias;
-
+		Matrix2d LastDeltaSum;
+		Matrix2d LastGradSum;
 
 		//----------------------------------
 		//Functions
-		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction, bool bias = false);
+		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction);
 		void CalculateStates(Layer &prevLayer);
 		void CalculateAxons();
 		void NguenWidrow(double Xmin, double Xmax, double Ymin, double Ymax);
+		Matrix2d GetDiff();
 	};
 
 	class ElmanNetwork
 	{
 	protected:
-		std::vector<Layer> _layers;
-		std::vector<Matrix2d> LastDeltaSum;
-		std::vector<Matrix2d> LastGradSum;
 		int _countlayers;
 	public:
+		std::vector<Layer> _layers;
 		ElmanNetwork() {};
 		ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
-		std::vector<Problem> TrainingSet;
 		std::vector<Matrix2d> eligibility;
-		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
-		//void Run();
 		void Run();
-		void Run(std::vector<double> input);
+		void Run(const std::vector<double>& input);
 		void Run(Matrix2d &input);
-		void AddTest(vector<double> ideal);
-		void AddTest(Matrix2d ideal);
+		void AddTest(const vector<double>& ideal) const;
+		void AddTest(Matrix2d& ideal) const;
 		double RunTrainingSetOffline(bool print = false);
 		double CalculateError(Problem& test, bool print = false);
 		void PrintProblemResult(Problem& test);
 		void ResilientPropagation();
-		void ResilientPropagation(std::vector<Matrix2d> PrevSumGrad, std::vector<Matrix2d> SumGrad, std::vector<Matrix2d> PrevSumDelta, std::vector<Matrix2d> SumDelta);
-		void CalcGradDelta(double output);
-		void CalcGradDelta(std::vector<double> output);
+		void ResilientPropagationOffline();
+		void CalcGradDelta(const double output);
+		void CalcGradDelta(const std::vector<double>& output);
 		void CalcGradDelta(Matrix2d &output);
 		Matrix2d& GetOutputGrad();
 		void MCQLCorrect();
@@ -181,61 +190,82 @@ namespace NeuroNet
 		return vmin + rand() * (vmax - vmin) / RAND_MAX;//
 	}
 
-	Matrix2d::Matrix2d(int n, int m, double val)
+	Matrix2d::~Matrix2d()
 	{
-		_m.resize(0);
-		_m.resize(n, std::vector<double>(m, val));
+		if (_m == nullptr) return;
+		delete[](_m);
+		_m = nullptr;
+	}
+
+	Matrix2d::Matrix2d(const Matrix2d & rhs)
+	{
+		if (_m == rhs._m) return;
+		this->n = rhs.n;
+		this->m = rhs.m;
+		_m = new double[n*m];
+		memcpy_s(_m, n*m * sizeof(**_m), rhs._m, n*m * sizeof(**rhs._m));
+	}
+
+	Matrix2d::Matrix2d(Matrix2d && rhs)
+	{
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		_m = move(rhs._m);
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		n = rhs.n;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		m = rhs.m;
+
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		rhs._m = nullptr;
+	}
+
+	Matrix2d::Matrix2d(int n, int m)
+	{
+		this->n = n;
+		this->m = m;
+		_m = new double[n*m];
 	}
 
 	Matrix2d::Matrix2d(const std::vector<double>& rhs)
 	{
-		Init(1, rhs.size());
-		for (int i = 0; i < rhs.size(); ++i)
-			_m[0][i] = rhs[i];
+		this->n = 1;
+		this->m = rhs.size();
+		_m = new double[m];
+		memcpy_s(_m, n*m * sizeof(*_m), rhs.data(), n*m * sizeof(*rhs.data()));
 	}
 
-	void Matrix2d::Init(int n, int m, double val)
+	void Matrix2d::Fill(double val)
 	{
-		_m.resize(0);
-		_m.resize(n, std::vector<double>(m, val));
-	}
-
-	void Matrix2d::InitRandom(int n, int m, double minv, double maxv)
-	{
-		Init(n, m);
 		for (int i = 0; i < n; ++i)
-		{
 			for (int j = 0; j < m; ++j)
-			{
-				_m[i][j] = getRand(minv, maxv);
-			}
-		}
+				at(i, j) = val;
 	}
 
-	void Matrix2d::Clear()
+	void Matrix2d::InitRandom(double minv, double maxv)
 	{
-		Init(GetVerticalSize(), GetHorizontalSize());
+		for (int i = 0; i < n; ++i)
+			for (int j = 0; j < m; ++j)
+				at(i, j) = getRand(minv, maxv);
 	}
 
 	int Matrix2d::GetHorizontalSize() const
 	{
-		return (GetVerticalSize() > 0 ? (int)_m[0].size() : 0);
+		return m;
 	}
 
 	int Matrix2d::GetVerticalSize() const
 	{
-		return (int)_m.size();
+		return n;
 	}
 
 	Matrix2d Matrix2d::operator!() const
 	{
-		Matrix2d res;
 		int m = GetVerticalSize();
 		int n = GetHorizontalSize();
-		res.Init(n, m);
+		Matrix2d res(n, m);
 		for (int i = 0; i < m; ++i)
 			for (int j = 0; j < n; ++j)
-				res._m[j][i] = _m[i][j];
+				res.at(j, i) = this->at(i, j);
 		return res;
 	}
 
@@ -246,18 +276,21 @@ namespace NeuroNet
 		int m = GetHorizontalSize();
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
-				res._m[i][j] = -_m[i][j];
+				res.at(i, j) = -at(i, j);
 		return res;
 	}
 
-	Matrix2d Matrix2d::operator+=(const Matrix2d & rhs)
+	Matrix2d& Matrix2d::operator+=(const Matrix2d & rhs)
 	{
 		if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
+		{
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
 			throw std::logic_error("Wrong sizes in addition operation");
+		}
 
-		for (int i = 0; i < (int)this->_m.size(); ++i)
-			for (int j = 0; j < (int)this->_m[i].size(); ++j)
-				_m[i][j] += rhs._m[i][j];
+		for (int i = 0; i < n; ++i)
+			for (int j = 0; j < m; ++j)
+				at(i, j) += rhs.at(i, j);
 		return *this;
 	}
 
@@ -267,11 +300,11 @@ namespace NeuroNet
 		return res += rhs;
 	}
 
-	Matrix2d Matrix2d::operator+=(const double rhs)
+	Matrix2d& Matrix2d::operator+=(const double rhs)
 	{
-		for (int i = 0; i < (int)this->_m.size(); ++i)
-			for (int j = 0; j < (int)this->_m[i].size(); ++j)
-				_m[i][j] += rhs;
+		for (int i = 0; i < n; ++i)
+			for (int j = 0; j < m; ++j)
+				at(i, j) += rhs;
 		return *this;
 	}
 
@@ -281,14 +314,17 @@ namespace NeuroNet
 		return res += rhs;
 	}
 
-	Matrix2d Matrix2d::operator-=(const Matrix2d & rhs)
+	Matrix2d& Matrix2d::operator-=(const Matrix2d & rhs)
 	{
 		if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
+		{
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
 			throw std::logic_error("Wrong sizes in subtraction operation");
+		}
 
-		for (int i = 0; i < (int)this->_m.size(); ++i)
-			for (int j = 0; j < (int)this->_m[i].size(); ++j)
-				_m[i][j] -= rhs._m[i][j];
+		for (int i = 0; i < n; ++i)
+			for (int j = 0; j < m; ++j)
+				at(i, j) -= rhs.at(i, j);
 		return *this;
 	}
 
@@ -298,7 +334,7 @@ namespace NeuroNet
 		return res -= rhs;
 	}
 
-	Matrix2d Matrix2d::operator-=(const double rhs)
+	Matrix2d& Matrix2d::operator-=(const double rhs)
 	{
 		return *this += -rhs;
 	}
@@ -312,18 +348,21 @@ namespace NeuroNet
 	Matrix2d Matrix2d::operator*(const Matrix2d & rhs) const
 	{
 		if (GetHorizontalSize() != rhs.GetVerticalSize())
+		{
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
 			throw std::logic_error("Wrong sizes in multiplication operation");
+		}
 
 		int n = GetVerticalSize();
 		int m = rhs.GetHorizontalSize();
 		int nm = GetHorizontalSize();
 		Matrix2d res(n, m);
+		res.Fill(0.0);
 
-#pragma omp parallel for private(j,k,res._m[i][j])
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
 				for (int k = 0; k < nm; ++k)
-					res._m[i][j] += _m[i][k] * rhs._m[k][j];
+					res.at(i, j) += this->at(i, k) * rhs.at(k, j);
 		return res;
 	}
 
@@ -335,80 +374,138 @@ namespace NeuroNet
 
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
-				res._m[i][j] = _m[i][j] * rhs;
+				res.at(i, j) = at(i, j) * rhs;
 		return res;
 	}
 
-	Matrix2d Matrix2d::operator=(const std::vector<std::vector<double>>& rhs)
+	Matrix2d& Matrix2d::operator=(const std::vector<std::vector<double>>& rhs)
 	{
-		_m.resize(rhs.size());
+
+		if (_m != nullptr)
+			delete[](_m);
+		this->n = rhs.size();
+		this->m = n > 0 ? rhs[0].size() : 0;
+		_m = new double[n*m];
+
 		for (int i = 0; i < (int)rhs.size(); ++i)
-		{
-			_m[i].resize(rhs[i].size());
-			for (int j = 0; j < (int)rhs[i].size(); ++j)
-				_m[i][j] = rhs[i][j];
-		}
+			memcpy_s(_m + (i*m) * sizeof(*_m), m * sizeof(*_m), rhs.data(), m * sizeof(*rhs.data()));
 		return *this;
 	}
 
-	Matrix2d Matrix2d::operator=(const Matrix2d & rhs)
+	Matrix2d& Matrix2d::operator=(const Matrix2d & rhs)
 	{
-		_m.resize(rhs._m.size());
-		for (int i = 0; i < (int)this->_m.size(); ++i)
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &rhs << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _m << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << rhs._m << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << (rhs._m == _m) << endl;
+		if (_m != nullptr && rhs._m == _m)
 		{
-			_m[i].resize(rhs._m[i].size());
-			for (int j = 0; j < (int)this->_m[i].size(); ++j)
-			{
-				this->_m[i][j] = rhs._m[i][j];
-			}
+			debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+			return *this;
 		}
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+
+		if (_m != nullptr)
+			delete[](_m);
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+
+
+		this->n = rhs.n;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		this->m = rhs.m;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		_m = new double[n*m];
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		memcpy_s(_m, n*m * sizeof(*_m), rhs._m, n*m * sizeof(*rhs._m));
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		return *this;
 	}
 
-	Matrix2d Matrix2d::operator=(const std::vector<double>& rhs)
+	Matrix2d & Matrix2d::operator=(Matrix2d && rhs)
 	{
-		this->_m.resize(1);
-		_m[0].resize(rhs.size());
-		std::copy(rhs.begin(), rhs.end(), _m[0].begin());
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		if (this->_m == rhs._m) return *this;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		_m = move(rhs._m);
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		n = rhs.n;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		m = rhs.m;
+
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		rhs._m = nullptr;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		return *this;
+	}
+
+	Matrix2d& Matrix2d::operator=(const std::vector<double>& rhs)
+	{
+		if (_m != nullptr)
+			delete[](_m);
+		this->n = 1;
+		this->m = rhs.size();
+		_m = new double[n*m];
+		memcpy_s(_m, n*m * sizeof(*_m), rhs.data(), n*m * sizeof(*rhs.data()));
 		return *this;
 	}
 
 	Matrix2d Matrix2d::abs() const
 	{
-		Matrix2d old;
-		int n = GetHorizontalSize();
-		int m = GetVerticalSize();
-		old.Init(n, m);
-		for (int i = 0; i < m; ++i)
-			for (int j = 0; j < n; ++j)
-				old._m[j][i] = std::abs(_m[i][j]);
+		int n = GetVerticalSize();
+		int m = GetHorizontalSize();
+		Matrix2d old(n, m);
+		for (int i = 0; i < n; ++i)
+			for (int j = 0; j < m; ++j)
+				old.at(i, i) = std::abs(at(i, j));
 		return old;
 	}
 
 	Matrix2d Matrix2d::multiplication(const Matrix2d & rhs) const
 	{
 		if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
+		{
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
 			throw std::logic_error("Wrong sizes in multiplication operation");
+		}
 
-		Matrix2d res((int)rhs._m.size(), (int)rhs._m[0].size());
-		for (int i = 0; i < (int)rhs._m.size(); ++i)
-			for (int j = 0; j < (int)rhs._m[i].size(); ++j)
-				res._m[i][j] = this->_m[i][j] * rhs._m[i][j];
+		Matrix2d res(rhs.n, rhs.m);
+		for (int i = 0; i < rhs.n; ++i)
+			for (int j = 0; j < rhs.m; ++j)
+				res.at(i, j) = this->at(i, j) * rhs.at(i, j);
 		return res;
 	}
 
 	const double Matrix2d::sum() const
 	{
 		double ans = 0;
-		for (int i = 0; i < (int)_m.size(); ++i)
-			for (int j = 0; j < (int)_m[i].size(); ++j)
-				ans += _m[i][j];
+		for (int i = 0; i < n; ++i)
+			for (int j = 0; j < m; ++j)
+				ans += at(i, j);
 		return ans;
 	}
 
-	double & Matrix2d::operator()(const int i, const int j)
+	double & Matrix2d::at(const int i, const int j)
 	{
-		return _m[i][j];
+		if (i >= n || j >= m)
+		{
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
+			throw std::logic_error("Wrong sizes in at operation");
+		}
+		return _m[i*m + j];
+	}
+
+	double Matrix2d::at(const int i, const int j) const
+	{
+		if (i >= n || j >= m)
+		{
+			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
+			throw std::logic_error("Wrong sizes in at operation");
+		}
+		return _m[i*m + j];
 	}
 
 	std::ostream & operator<<(std::ostream & os, const Matrix2d & m)
@@ -416,7 +513,7 @@ namespace NeuroNet
 		for (int j = 0; j < m.GetVerticalSize(); ++j)
 		{
 			for (int k = 0; k < m.GetHorizontalSize(); ++k)
-				os << m._m[j][k] << " ";
+				os << m.at(j, k) << " ";
 			os << std::endl;
 		}
 
@@ -425,27 +522,26 @@ namespace NeuroNet
 
 	Matrix2d sqrt(const Matrix2d & rhs)
 	{
-		Matrix2d res;
-		int n = rhs.GetHorizontalSize();
-		int m = rhs.GetVerticalSize();
-		res.Init(n, m);
-		for (int i = 0; i < m; ++i)
-			for (int j = 0; j < n; ++j)
-				res._m[j][i] = std::abs(rhs._m[i][j]);
+		int n = rhs.GetVerticalSize();
+		int m = rhs.GetHorizontalSize();
+		Matrix2d res(n, m);
+		for (int i = 0; i < n; ++i)
+			for (int j = 0; j < m; ++j)
+				res.at(i, j) = std::sqrt(rhs.at(i, j));
 		return res;
 	}
 
-	Matrix2d Layer::sigm_function(Matrix2d x)
+	Matrix2d Layer::sigm_function(Matrix2d& x)
 	{
 		int n = x.GetVerticalSize(), m = x.GetHorizontalSize();
 		Matrix2d res(n, m);
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
-				res(i, j) = x(i, j) <= -35 ? x(i, j) = 10e-15 : 1.0 / (1.0 + exp(-x(i, j)));
+				res.at(i, j) = x.at(i, j) <= -35 ? x.at(i, j) = 10e-15 : 1.0 / (1.0 + exp(-x.at(i, j)));
 		return res;
 	}
 
-	Matrix2d Layer::tanh_function(Matrix2d x)
+	Matrix2d Layer::tanh_function(Matrix2d& x)
 	{
 		int n = x.GetVerticalSize(), m = x.GetHorizontalSize();
 		Matrix2d res(n, m);
@@ -453,47 +549,57 @@ namespace NeuroNet
 			for (int j = 0; j < m; ++j)
 			{
 				//res(i,j) = (exp(2 * x(i,j)) - 1.0) / (exp(2 * x(i,j)) + 1.0);
-				res(i, j) = std::tanh(x(i, j));
+				res.at(i, j) = std::tanh(x.at(i, j));
 			}
 		return res;
 	}
 
-	Matrix2d Layer::diff_tanh_function(Matrix2d x)
+	Matrix2d Layer::diff_tanh_function(Matrix2d& x)
 	{
 		int n = x.GetVerticalSize(), m = x.GetHorizontalSize();
 		Matrix2d res(n, m);
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
-				res(i, j) = 1.0 - x(i, j) * x(i, j);
+				res.at(i, j) = 1.0 - x.at(i, j) * x.at(i, j);
 		return res;
 	}
 
-	Matrix2d Layer::diff_sigm_function(Matrix2d x)
+	Matrix2d Layer::diff_sigm_function(Matrix2d& x)
 	{
 		int n = x.GetVerticalSize(), m = x.GetHorizontalSize();
 		Matrix2d res(n, m);
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
-				res(i, j) = (1.0 - x(i, j)) * x(i, j);
+				res.at(i, j) = (1.0 - x.at(i, j)) * x.at(i, j);
 		return res;
 	}
 
-	Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction, bool bias)
+	Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction)
 	{
 		_aftype = activationFunction;
-		Weights.InitRandom(neuronCount, prevNeuronCount, -1, 1);
-		States.Init(1, neuronCount);
-		Axons.Init(1, neuronCount);
-		Delta.Init(1, neuronCount);
-		LastDelta.Init(1, neuronCount);
-		Grad.Init(neuronCount, prevNeuronCount);
-		LastGrad.Init(neuronCount, prevNeuronCount);
-		CorrectVal.InitRandom(neuronCount, prevNeuronCount, 0, 1);
-		if (bias)
-			Bias.InitRandom(1, neuronCount);
-		else Bias.Init(1, neuronCount);
-		//BiasCorrectVal.Init(1, neuronCount, 0.1);
-		BiasCorrectVal.InitRandom(1, neuronCount);
+		Weights = Matrix2d(neuronCount, prevNeuronCount);
+		States = Matrix2d(1, neuronCount);
+		Axons = Matrix2d(1, neuronCount);
+		Delta = Matrix2d(1, neuronCount);
+		LastDelta = Matrix2d(1, neuronCount);
+		Grad = Matrix2d(neuronCount, prevNeuronCount);
+		LastGrad = Matrix2d(neuronCount, prevNeuronCount);
+		CorrectVal = Matrix2d(neuronCount, prevNeuronCount);
+		DeltaSum = Matrix2d(1, neuronCount);
+		GradSum = Matrix2d(neuronCount, prevNeuronCount);
+		LastDeltaSum = Matrix2d(1, neuronCount);
+		LastGradSum = Matrix2d(neuronCount, prevNeuronCount);
+		Bias = Matrix2d(1, neuronCount);
+		BiasCorrectVal = Matrix2d(1, neuronCount);
+
+		Weights.InitRandom(0, 1);
+		CorrectVal.InitRandom(0, 1);
+		DeltaSum.Fill(0.0);
+		GradSum.Fill(0.0);
+		LastDeltaSum.Fill(0.0);
+		LastGradSum.Fill(0.0);
+		BiasCorrectVal.InitRandom(-1.0, 1.0);
+		Bias.InitRandom(-1.0, 1.0);
 	}
 
 	//TODO add const operation
@@ -527,11 +633,17 @@ namespace NeuroNet
 		case SIGM:
 			return diff_sigm_function(Axons);
 		case LINE:
-			return Matrix2d(Axons.GetVerticalSize(), Axons.GetHorizontalSize(), 1.0);
+		{
+			Matrix2d res(Axons.GetVerticalSize(), Axons.GetHorizontalSize());
+			res.Fill(1.0);
+			return res;
+		}
 		case TANH:
 			return diff_tanh_function(Axons);
 		default:
-			return Matrix2d(Axons.GetVerticalSize(), Axons.GetHorizontalSize(), 1.0);
+			Matrix2d res(Axons.GetVerticalSize(), Axons.GetHorizontalSize());
+			res.Fill(1.0);
+			return res;
 			break;
 		}
 	}
@@ -543,29 +655,29 @@ namespace NeuroNet
 		{
 			double mvij = 0.0;
 			for (int j = 0; j < Weights.GetHorizontalSize(); ++j)
-				mvij += Weights(i, j) * Weights(i, j);
+				mvij += Weights.at(i, j) * Weights.at(i, j);
 			mvij = std::sqrt(mvij);
 			if (mvij == 0) mvij = 1;
 
 			for (int j = 0; j < Weights.GetHorizontalSize(); ++j)
 			{
-				Weights(i, j) *= beta / mvij;
+				Weights.at(i, j) *= beta / mvij;
 			}
-			Bias(0, i) = getRand(-beta, beta);
+			Bias.at(0, i) = getRand(-beta, beta);
 		}
 
 		double x = 0.5*(Xmax - Xmin), y = 0.5*(Xmax + Xmin);
 		Weights = Weights*x; Bias = Bias*x + y;
 		Matrix2d a(1, Weights.GetHorizontalSize()), c(1, Weights.GetHorizontalSize());
 		for (int j = 0; j < Weights.GetHorizontalSize(); j++) {
-			a(0, j) = 2.0 / (Ymax - Ymin);
-			c(0, j) = 1.0 - Ymax*a(0, j);
+			a.at(0, j) = 2.0 / (Ymax - Ymin);
+			c.at(0, j) = 1.0 - Ymax*a.at(0, j);
 		}
 		Bias = !(Weights * !c + !Bias);
 
 		for (int j = 0; j < Weights.GetVerticalSize(); j++)
 			for (int k = 0; k < Weights.GetHorizontalSize(); k++)
-				Weights(j, k) *= a(0, k);
+				Weights.at(j, k) *= a.at(0, k);
 	}
 
 	double operator* (const std::vector<double> &lhs, const std::vector<double> &rhs)
@@ -580,42 +692,55 @@ namespace NeuroNet
 
 	double ElmanNetwork::RunTrainingSetOffline(bool print)
 	{
-		std::vector<Matrix2d> GradSum(3);
-		std::vector<Matrix2d> DeltaSum(3);
-
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < _countlayers; ++i)
 		{
-			GradSum[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
-			DeltaSum[i] = Matrix2d(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
+			_layers[i].GradSum.Fill(0.0);
+			_layers[i].DeltaSum.Fill(0.0);
 		}
-		int TestCount = 10;
-
-		while (TestCount--)
+		int TestCount = 2;
+		if (TrainingSet.size() <= TestCount)
 		{
-			int itest = dist(eng) % TrainingSet.size();
-			//debug << "Test " << itest << std::endl;
-			Run(TrainingSet[itest].inputs);
-			//debug << "AfterRun " << itest << std::endl;
-			CalcGradDelta(TrainingSet[itest].outputs);
-			//debug << "AfterCalc " << itest << std::endl;
-			for (int i = 1; i < 3; ++i)
+			for (int t = 0; t < TrainingSet.size(); ++t)
 			{
-				GradSum[i] += _layers[i].Grad;
-				DeltaSum[i] += _layers[i].Delta;
+				Run(TrainingSet[t].inputs);
+				CalcGradDelta(TrainingSet[t].outputs);
+				for (int i = 1; i < _countlayers; ++i)
+				{
+					_layers[i].GradSum += _layers[i].Grad;
+					_layers[i].DeltaSum += _layers[i].Delta;
+				}
+				if (print) PrintProblemResult(TrainingSet[t]);
 			}
-			if (print) PrintProblemResult(TrainingSet[itest]);
+		}
+		else
+		{
+			while (TestCount--)
+			{
+				int itest = dist(eng) % TrainingSet.size();
+				Run(TrainingSet[itest].inputs);
+				CalcGradDelta(TrainingSet[itest].outputs);
+				for (int i = 1; i < _countlayers; ++i)
+				{
+					_layers[i].GradSum += _layers[i].Grad;
+					_layers[i].DeltaSum += _layers[i].Delta;
+				}
+				if (print) PrintProblemResult(TrainingSet[itest]);
+			}
 		}
 		if (print) std::cout << std::endl << "=======CORRECT==========" << std::endl;
 
 		double normGrad = 0.0;
 		for (int i = 0; i < _countlayers; ++i)
-			normGrad += sqrt(GradSum[i] * !GradSum[i]).sum();
+			normGrad += sqrt(_layers[i].GradSum * !_layers[i].GradSum).sum();
 
 		if (normGrad < 1e-6)
 			return 0.0;
-		ResilientPropagation(LastGradSum, GradSum, LastDeltaSum, DeltaSum);
-		LastGradSum = GradSum;
-		LastDeltaSum = DeltaSum;
+		ResilientPropagationOffline();
+		for (int i = 0; i < _countlayers; ++i)
+		{
+			_layers[i].LastGradSum = _layers[i].GradSum;
+			_layers[i].LastDeltaSum = _layers[i].DeltaSum;
+		}
 
 
 		double error = 0.0;
@@ -633,7 +758,7 @@ namespace NeuroNet
 		std::cout << *this;
 		std::cout << "Expected results:" << std::endl;
 		for (int i = 0; i < test.outputs.GetHorizontalSize(); ++i)
-			std::cout << test.outputs(0, i) << " ";
+			std::cout << test.outputs.at(0, i) << " ";
 		std::cout << std::endl;
 	}
 
@@ -647,44 +772,44 @@ namespace NeuroNet
 				for (int k = 0; k < _layers[i].Grad.GetHorizontalSize(); ++k)
 				{
 					double cur_correct = 0.0;
-					double cur_mult = _layers[i].Grad(j, k) * _layers[i].LastGrad(j, k);
+					double cur_mult = _layers[i].Grad.at(j, k) * _layers[i].LastGrad.at(j, k);
 					if (cur_mult == 0.0)
 						cur_correct = getRand(0, 1);
 					else if (cur_mult > 0.0)
-						cur_correct = min(EttaPlus * _layers[i].CorrectVal(j, k), 50.0);
+						cur_correct = min(EttaPlus * _layers[i].CorrectVal.at(j, k), 50.0);
 					else if (cur_mult < 0.0)
-						cur_correct = max(EttaMinus * _layers[i].CorrectVal(j, k), 1e-6);
+						cur_correct = max(EttaMinus * _layers[i].CorrectVal.at(j, k), 1e-6);
 
-					_layers[i].CorrectVal(j, k) = cur_correct;
+					_layers[i].CorrectVal.at(j, k) = cur_correct;
 
-					if (_layers[i].Grad(j, k) == 0.0) continue;
+					if (_layers[i].Grad.at(j, k) == 0.0) continue;
 
-					if (_layers[i].Grad(j, k) > 0)
-						_layers[i].Weights(j, k) += -cur_correct;
+					if (_layers[i].Grad.at(j, k) > 0)
+						_layers[i].Weights.at(j, k) += -cur_correct;
 					else
-						_layers[i].Weights(j, k) += cur_correct;
+						_layers[i].Weights.at(j, k) += cur_correct;
 				}
 			}
 
 			for (int j = 0; j < _layers[i].Delta.GetHorizontalSize(); ++j)
 			{
 				double cur_correct = 0.0;
-				double cur_mult = _layers[i].Delta(0, j) * _layers[i].LastDelta(0, j);
+				double cur_mult = _layers[i].Delta.at(0, j) * _layers[i].LastDelta.at(0, j);
 				if (cur_mult == 0.0)
 					cur_correct = getRand(0, 1);
 				else if (cur_mult > 0.0)
-					cur_correct = min(EttaPlus * _layers[i].BiasCorrectVal(0, j), 50.0);
+					cur_correct = min(EttaPlus * _layers[i].BiasCorrectVal.at(0, j), 50.0);
 				else if (cur_mult < 0.0)
-					cur_correct = max(EttaMinus * _layers[i].BiasCorrectVal(0, j), 1e-6);
+					cur_correct = max(EttaMinus * _layers[i].BiasCorrectVal.at(0, j), 1e-6);
 
-				_layers[i].BiasCorrectVal(0, j) = cur_correct;
+				_layers[i].BiasCorrectVal.at(0, j) = cur_correct;
 
-				if (_layers[i].Delta(0, j) == 0.0) continue;
+				if (_layers[i].Delta.at(0, j) == 0.0) continue;
 
-				if (_layers[i].Delta(0, j) > 0)
-					_layers[i].Bias(0, j) += -cur_correct;
+				if (_layers[i].Delta.at(0, j) > 0)
+					_layers[i].Bias.at(0, j) += -cur_correct;
 				else
-					_layers[i].Bias(0, j) += cur_correct;
+					_layers[i].Bias.at(0, j) += cur_correct;
 			}
 		}
 	}
@@ -704,64 +829,64 @@ namespace NeuroNet
 		return error;
 	}
 
-	void ElmanNetwork::ResilientPropagation(std::vector<Matrix2d> PrevSumGrad, std::vector<Matrix2d> SumGrad, std::vector<Matrix2d> PrevSumDelta, std::vector<Matrix2d> SumDelta)
+	void ElmanNetwork::ResilientPropagationOffline()
 	{
 		const double EttaPlus = 1.2, EttaMinus = 0.5;
 		for (int i = 1; i < _countlayers; ++i)
 		{
-			for (int j = 0; j < SumGrad[i].GetVerticalSize(); ++j)
+			for (int j = 0; j < _layers[i].GradSum.GetVerticalSize(); ++j)
 			{
-				for (int k = 0; k < SumGrad[i].GetHorizontalSize(); ++k)
+				for (int k = 0; k < _layers[i].GradSum.GetHorizontalSize(); ++k)
 				{
 					double cur_correct = 0.0;
-					double cur_mult = SumGrad[i](j, k) * PrevSumGrad[i](j, k);
+					double cur_mult = _layers[i].GradSum.at(j, k) * _layers[i].LastGradSum.at(j, k);
 					if (cur_mult == 0.0)
 						cur_correct = getRand(0, 1);
 					else if (cur_mult > 0.0)
-						cur_correct = min(EttaPlus * _layers[i].CorrectVal(j, k), 50.0);
+						cur_correct = min(EttaPlus * _layers[i].CorrectVal.at(j, k), 50.0);
 					else if (cur_mult < 0.0)
-						cur_correct = max(EttaMinus * _layers[i].CorrectVal(j, k), 1e-6);
+						cur_correct = max(EttaMinus * _layers[i].CorrectVal.at(j, k), 1e-6);
 
-					_layers[i].CorrectVal(j, k) = cur_correct;
+					_layers[i].CorrectVal.at(j, k) = cur_correct;
 
-					if (SumGrad[i](j, k) == 0.0) continue;
+					if (_layers[i].GradSum.at(j, k) == 0.0) continue;
 
-					if (SumGrad[i](j, k) > 0)
-						_layers[i].Weights(j, k) += -cur_correct;
+					if (_layers[i].GradSum.at(j, k) > 0)
+						_layers[i].Weights.at(j, k) += -cur_correct;
 					else
-						_layers[i].Weights(j, k) += cur_correct;
+						_layers[i].Weights.at(j, k) += cur_correct;
 				}
 			}
 
-			for (int j = 0; j < SumDelta[i].GetHorizontalSize(); ++j)
+			for (int j = 0; j < _layers[i].DeltaSum.GetHorizontalSize(); ++j)
 			{
 				double cur_correct = 0.0;
-				double cur_mult = SumDelta[i](0, j) * PrevSumDelta[i](0, j);
+				double cur_mult = _layers[i].DeltaSum.at(0, j) * _layers[i].LastDeltaSum.at(0, j);
 				if (cur_mult == 0.0)
 					cur_correct = getRand(0, 1);
 				else if (cur_mult > 0.0)
-					cur_correct = min(EttaPlus * _layers[i].BiasCorrectVal(0, j), 50.0);
+					cur_correct = min(EttaPlus * _layers[i].BiasCorrectVal.at(0, j), 50.0);
 				else if (cur_mult < 0.0)
-					cur_correct = max(EttaMinus * _layers[i].BiasCorrectVal(0, j), 1e-6);
+					cur_correct = max(EttaMinus * _layers[i].BiasCorrectVal.at(0, j), 1e-6);
 
-				_layers[i].BiasCorrectVal(0, j) = cur_correct;
+				_layers[i].BiasCorrectVal.at(0, j) = cur_correct;
 
-				if (SumDelta[i](0, j) == 0.0) continue;
+				if (_layers[i].DeltaSum.at(0, j) == 0.0) continue;
 
-				if (SumDelta[i](0, j) > 0)
-					_layers[i].Bias(0, j) += -cur_correct;
+				if (_layers[i].DeltaSum.at(0, j) > 0)
+					_layers[i].Bias.at(0, j) += -cur_correct;
 				else
-					_layers[i].Bias(0, j) += cur_correct;
+					_layers[i].Bias.at(0, j) += cur_correct;
 			}
 		}
 	}
 
-	void ElmanNetwork::CalcGradDelta(double output)
+	void ElmanNetwork::CalcGradDelta(const double output)
 	{
 		CalcGradDelta(std::vector<double>(1, output));
 	}
 
-	void ElmanNetwork::CalcGradDelta(std::vector<double> outputs)
+	void ElmanNetwork::CalcGradDelta(const std::vector<double>& outputs)
 	{
 		CalcGradDelta(Matrix2d(outputs));
 	}
@@ -789,22 +914,22 @@ namespace NeuroNet
 
 	void ElmanNetwork::MCQLCorrect()
 	{
-		try {
-			for (int i = 1; i < _countlayers; ++i)
-				_layers[i].Weights += eligibility[i] * ALPHA*(r + GAMMA*Q - lastQ);
+		/*try {
+		for (int i = 1; i < _countlayers; ++i)
+		_layers[i].Weights += eligibility[i] * ALPHA*(r + GAMMA*Q - lastQ);
 
-			std::vector<double> out;
-			out.push_back(Q);
-			CalcGradDelta(out);
+		std::vector<double> out;
+		out.push_back(Q);
+		CalcGradDelta(out);
 
-			for (int i = 1; i < _countlayers; ++i)
-				eligibility[i] = _layers[i].Grad + eligibility[i] * GAMMA*LAMBDA;
+		for (int i = 1; i < _countlayers; ++i)
+		eligibility[i] = _layers[i].Grad + eligibility[i] * GAMMA*LAMBDA;
 		}
 		catch (std::exception ex)
 		{
-			debug << "EXCEPTION: " << endl << ex.what() << endl;
-			throw new std::exception("Exit");
-		}
+		debug << "EXCEPTION: " << endl << ex.what() << endl;
+		throw new std::exception("Exit");
+		}*/
 	}
 
 	Matrix2d ElmanNetwork::GetOut() const
@@ -828,13 +953,13 @@ namespace NeuroNet
 
 		os << std::endl << "Input neurons:" << std::endl;
 		for (int i = 0; i < net._layers[0].Axons.GetHorizontalSize(); ++i)
-			os << net._layers[0].Axons(0, i) << " ";
+			os << net._layers[0].Axons.at(0, i) << " ";
 
 		os << std::endl;
 
 		os << std::endl << "Output neurons:" << std::endl;
 		for (int i = 0; i < net._layers.back().Axons.GetHorizontalSize(); ++i)
-			os << net._layers.back().Axons(0, i) << " ";
+			os << net._layers.back().Axons.at(0, i) << " ";
 		os << std::endl;
 		os << "===============" << std::endl;
 		return os;
@@ -842,54 +967,41 @@ namespace NeuroNet
 
 	ElmanNetwork::ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
 	{
-		Init(InputCount, OutputCount, NeuronCount, HiddenLayerFunction);
-	}
-
-	void ElmanNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
-	{
 		_layers.clear();
-		_layers.push_back(Layer(InputCount + NeuronCount, 0, LINE));
-		_layers.push_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction, true));
+		_layers.emplace_back(Layer(InputCount + NeuronCount, 0, LINE));
+		_layers.emplace_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction));
 		_layers.back().NguenWidrow(-2, 2, -1, 1);
-		_layers.push_back(Layer(OutputCount, NeuronCount, SIGM, true));
+		_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
+		_layers.back().NguenWidrow(-2, 2, -1, 1);
+		_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
+		_layers.back().NguenWidrow(-2, 2, -1, 1);
+		_layers.emplace_back(Layer(OutputCount, NeuronCount, LINE));
 		//_layers.back().NguenWidrow(-1, 1, -1, 1);
 		_countlayers = _layers.size();
 
-		LastDeltaSum.resize(3);
-		LastGradSum.resize(3);
-		eligibility.resize(3);
-		for (int i = 0; i < 3; ++i)
+		eligibility.resize(_countlayers);
+		for (int i = 0; i < _countlayers; ++i)
 		{
-			LastGradSum[i].Init(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
-			eligibility[i].Init(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
-			LastDeltaSum[i].Init(_layers[i].Delta.GetVerticalSize(), _layers[i].Delta.GetHorizontalSize());
+			eligibility[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
+			eligibility[i].Fill(0.0);
 		}
-
-		debug << _layers[1].Weights(0, 0) << endl << endl;;
 	}
 
 	void ElmanNetwork::Run()
 	{
-		try {
-			//init hidden and output layers
-			for (int i = 1; i < (int)_layers.size(); ++i)
-			{
-				_layers[i].CalculateStates(_layers[i - 1]);
-				_layers[i].CalculateAxons();
-			}
-
-			//copy hidden into input (context)
-			for (int i = 1; i <= _layers[1].Axons.GetHorizontalSize(); ++i)
-				_layers[0].States(0, _layers[0].States.GetHorizontalSize() - i) = _layers[1].Axons(0, _layers[1].Axons.GetHorizontalSize() - i);
-		}
-		catch (std::exception ex)
+		//init hidden and output layers
+		for (int i = 1; i < (int)_layers.size(); ++i)
 		{
-			debug << "EXCEPTION: " << endl << ex.what() << endl;
-			throw new std::exception("Exit");
+			_layers[i].CalculateStates(_layers[i - 1]);
+			_layers[i].CalculateAxons();
 		}
+
+		//copy hidden into input (context)
+		for (int i = 1; i <= _layers[1].Axons.GetHorizontalSize(); ++i)
+			_layers[0].States.at(0, _layers[0].States.GetHorizontalSize() - i) = _layers[1].Axons.at(0, _layers[1].Axons.GetHorizontalSize() - i);
 	}
 
-	void ElmanNetwork::Run(std::vector<double> input)
+	void ElmanNetwork::Run(const std::vector<double>& input)
 	{
 		Run(Matrix2d(input));
 	}
@@ -898,26 +1010,53 @@ namespace NeuroNet
 	{
 		//init input layer
 		for (int i = 0; i < (int)input.GetHorizontalSize(); ++i)
-			_layers[0].States(0, i) = input(0, i);
+			_layers[0].States.at(0, i) = input.at(0, i);
 		_layers[0].CalculateAxons();
 
 		Run();
 	}
-	void ElmanNetwork::AddTest(vector<double> ideal)
+	void ElmanNetwork::AddTest(const vector<double> &ideal) const
 	{
-		TrainingSet.resize(TrainingSet.size() + 1);
-		TrainingSet.back().inputs = _layers[0].States;
-		TrainingSet.back().outputs = ideal;
+		debug << "before pr" << endl;
+		auto pr = Problem();
+		debug << "before pr.inputs1" << endl;
+		pr.inputs = _layers[0].States;
+		debug << "before pr.outputs" << endl;
+		pr.outputs = ideal;
+		debug << "before TrainingSet.emplace_back" << endl;
+		TrainingSet.emplace_back(pr);
 	}
-	void ElmanNetwork::AddTest(Matrix2d ideal)
+	void ElmanNetwork::AddTest(Matrix2d& ideal) const
 	{
-		TrainingSet.resize(TrainingSet.size() + 1);
-		TrainingSet.back().inputs = _layers[0].States;
-		TrainingSet.back().outputs = ideal;
+		debug << "NETS ADR" << this << endl;
+
+		debug << "NETS " << _layers.size() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		debug << "NETS " << _layers.size() << endl;
+		auto pr = Problem();
+		debug << "NETS " << _layers.size() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _layers.size() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &_layers << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &_layers[0] << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &_layers[0].States << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _layers[0].States.GetHorizontalSize() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _layers[0].States.GetVerticalSize() << endl;
+		debug << "NETS " << _layers.size() << endl;
+		pr.inputs = _layers[0].States;
+		debug << "NETS " << _layers.size() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		debug << "NETS " << _layers.size() << endl;
+		pr.outputs = ideal;
+		debug << "NETS " << _layers.size() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		TrainingSet.emplace_back(pr);
 	}
 }
 
+NeuroNet::Matrix2d vr(1, 1);
 enum Actions { FORWARD, BACKWARD, LEFTSTEP, RIGHTSTEP, COUNT };
+
 
 void DoAction(MyPlayer* me, Actions action)
 {
@@ -955,11 +1094,11 @@ void MyPlayer::Init()
 	nets.resize(Actions::COUNT);
 	for (int i = 0; i < nets.size(); ++i)
 	{
-		debug << "net " << i << endl;
-		nets[i].Init(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM);
-		debug << "net " << i << "inited" << endl << endl;
+		//	debug << "net " << i << endl;
+		nets[i] = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
+		//	debug << "net " << i << "inited" << endl << endl;
 	}
-	//net.Init(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
+	//net.InitFill(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
 }
 
 bool check(Element *player, double x, double y, double angle, double step_angle)
@@ -973,10 +1112,13 @@ bool check(Element *player, double x, double y, double angle, double step_angle)
 			sqrt(vx*vx + vy*vy)
 			*sqrt(vx2*vx2 + vy2*vy2)
 			);
+	cosa = max(-1.0 + EPS, cosa);
+	cosa = min(1.0 - EPS, cosa);
 	double angleB = acos(cosa);
-	
-	debug << " in check cosa = " << cosa << " angle = " << angleB << " result = " << (abs(angleB) <= step_angle / 2.0);
-	return abs(angleB) <= step_angle / 2.0;
+	if (angleB < -FLT_MAX)
+		int y = 0;
+	//debug << " in check cosa = " << cosa << " angle = " << angleB << " result = " << (abs(angleB) <= step_angle / 2.0);
+	return abs(angleB) <= step_angle / 2.0 + EPS;
 }
 
 
@@ -989,25 +1131,24 @@ bool check(Element *player, Element *elem, double angle, double step_angle)
 enum ElementType { TFOOD, TENEMY, TBLOCK, TCOUNT };
 string elty[] = { "FOOD", "ENEMY", "BLOCK", "COUNT" };
 
-
 pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, double step_angle)
 {
-	debug << "start" << endl;
+	//debug << "start" << endl;
 	double x, y;
 	double x0 = me->GetX();
 	double y0 = me->GetY();
 	double k = tan(angle);
 	double angleB;
-	debug << "inited" << endl;
+	//debug << "inited" << endl;
 
 	//Y = 0, x = 0..getw
 	double dist = DBL_MAX;
 	double min_dist = DBL_MAX;
 	ElementType cur_type = ElementType::TENEMY;
-	debug << "before if" << endl;
+	//debug << "before if" << endl;
 	if (abs(angle - M_PI / 2) <= DBL_EPSILON || abs(angle - 3 * M_PI / 2) <= DBL_EPSILON)
 	{
-		debug << "in first if" << endl;
+		//debug << "in first if" << endl;
 		//пересечение только с горизонтальными сторонами
 		dist = min(dist, me->GetY());
 		dist = min(dist, w->GetHeight() - me->GetY());
@@ -1019,7 +1160,7 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 	}
 	else if (abs(angle) <= DBL_EPSILON || abs(angle - M_PI) <= DBL_EPSILON)
 	{
-		debug << "in second if" << endl;
+		//debug << "in second if" << endl;
 		//пересечение только с вертилкальными сторонами
 		dist = min(dist, me->GetX());
 		dist = min(dist, w->GetWidth() - me->GetX());
@@ -1031,7 +1172,7 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 	}
 	else
 	{
-		debug << "in else" << endl;
+		//debug << "in else" << endl;
 		//случайные пересечения
 		/*
 		система:
@@ -1046,45 +1187,45 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 		double b = y0 - k*x0;
 		double y = 0.0;
 		double x = (y - b) / k;
-		debug << "1xy b = " << b << " x = " << x << " y = " << y;
-		if (x >= 0.0 && x <= w->GetWidth() && check(me, x, y, angle, step_angle))
+		//debug << "1xy b = " << b << " x = " << x << " y = " << y;
+		if (x >= -EPS && x <= w->GetWidth() + EPS && check(me, x, y, angle, step_angle))
 		{
-			debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
+			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		debug << endl;
+		//debug << endl;
 		//y=geth
 		y = w->GetHeight();
 		x = (y - b) / k;
-		debug << "2xy b = " << b << " x = " << x << " y = " << y;
-		if (x >= 0.0 && x <= w->GetWidth() && check(me, x, y, angle, step_angle))
+		//debug << "2xy b = " << b << " x = " << x << " y = " << y;
+		if (x >= -EPS && x <= w->GetWidth() + EPS && check(me, x, y, angle, step_angle))
 		{
-			debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
+			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		debug << endl;
+		//debug << endl;
 
 		//x=0
 		x = 0.0;
 		y = k*x + b;
-		debug << "3xy b = " << b << " x = " << x << " y = " << y;
-		if (y >= 0.0 && y <= w->GetHeight() && check(me, x, y, angle, step_angle))
+		//debug << "3xy b = " << b << " x = " << x << " y = " << y;
+		if (y >= -EPS && y <= w->GetHeight() + EPS && check(me, x, y, angle, step_angle))
 		{
-			debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
+			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		debug << endl;
+		//debug << endl;
 
 		//x=getw
 		x = w->GetWidth();
 		y = k*x + b;
-		debug << "4xy b = " << b << " x = " << x << " y = " << y;
-		if (y >= 0.0 && y <= w->GetHeight() && check(me, x, y, angle, step_angle))
+		//debug << "4xy b = " << b << " x = " << x << " y = " << y;
+		if (y >= -EPS && y <= w->GetHeight() + EPS && check(me, x, y, angle, step_angle))
 		{
-			debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
+			//debug << " dist = " << sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0));
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
-		debug << endl; 
+		//debug << endl;
 
 		if (min_dist > dist)
 		{
@@ -1092,9 +1233,9 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 			cur_type = ElementType::TBLOCK;
 		}
 	}
-	debug << "return" << endl;
+	//debug << "return" << endl;
 
-	debug << min_dist << " " << elty[cur_type] << endl;
+	//debug << min_dist << " " << elty[cur_type] << endl;
 	return make_pair(min_dist, cur_type);
 }
 
@@ -1121,7 +1262,11 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 				min_dist = dist;
 				cur_type = ElementType::TFOOD;
 			}
+
 		}
+
+		if (cur_type == TENEMY)
+			int y = 0;
 
 		//block
 		for each (auto cur in w->GetBlocks())
@@ -1133,19 +1278,23 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 				cur_type = ElementType::TBLOCK;
 			}
 		}
-
+		if (cur_type == TENEMY)
+			int y = 0;
 
 
 		auto res = getDistanceOnWall(me, w, angle, step_angle);
+		if (res.second == TENEMY)
+			int y = 0;
 
 		if (min_dist > res.first)
 		{
 			min_dist = res.first;
 			cur_type = res.second;
 		}
-
-		inputs(0, eye) = min_dist;
-		inputs(0, eye + 1) = cur_type;
+		if (cur_type == TENEMY)
+			int y = 0;
+		inputs.at(0, eye) = min_dist;
+		inputs.at(0, eye + 1) = cur_type;
 
 		//debug << "eye " << min_dist << " " << elty[cur_type] << endl;
 		eye += 2;
@@ -1154,55 +1303,74 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 
 
 }
+NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT);
 
 int lasttest = -1;
 int tick = -1;
 void MyPlayer::Move()
 {
+	debug << "NETS " << nets[0]._layers.size() << " " << nets[1]._layers.size() << " " << nets[2]._layers.size() << " " << nets[3]._layers.size() << " " << endl;
 	tick++;
-	//Input order: My coordinates, Health, Fullness, Angle, Food coordinates, Enemy coordinates, Trap coordinates, Poison coordinates, Cornucopia coordinates, Block coordinates
-	NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT, -1.0);
+	debug << "TICK " << tick << endl;
 
 	/////////////////////////////////////////////////////////////////////
-	///////////////////////// Init input vector /////////////////////////
+	///////////////////////// InitFill input vector /////////////////////////
+	inputs.Fill(-1.0);
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
-	debug << inputs << endl;
-	r = GetHealth() * GetFullness() * 1.0 / 300000;
+	debug << "after inputs set" << endl;
+	//debug << inputs << endl;
+	vr.at(0, 0) = GetFullness();
+	debug << "after fullnes" << endl;
 
 	int action = -1;
 	int rnd = dist(eng);
+	debug << "after rnd" << endl;
+
 	if (!FirstStep)
 	{
-		//nets[lastAction].CalcGradDelta(r);
-		//nets[lastAction].AddTest(vector<double>(1, r));
-		int Epoch = 5;
-		for (int i = 0; i < Actions::COUNT; ++i)
+		/*int maxtests = 500;
+		int mintest = 100;
+		if (TrainingSet.size() > maxtests)
 		{
-			nets[i].AddTest(vector<double>(1, r));
-			/*while (Epoch--)
+		vector<NeuroNet::Problem> vp;
+		int ct = mintest;
+		while (ct--)
+		vp.push_back(TrainingSet[dist(eng) % TrainingSet.size()]);
+		}*/
+		debug << "before AddTest" << endl;
+		debug << "NETS " << nets[0]._layers.size() << " " << nets[1]._layers.size() << " " << nets[2]._layers.size() << " " << nets[3]._layers.size() << " " << endl;
+		debug << "NETS ADR act " << lastAction << endl;
+		debug << "NETS ADR old " << &nets[lastAction] << endl;
+		nets[lastAction].AddTest(vr);
+		debug << "NETS " << nets[0]._layers.size() << " " << nets[1]._layers.size() << " " << nets[2]._layers.size() << " " << nets[3]._layers.size() << " " << endl;
+		debug << "after AddTest" << endl;
+		if (tick % 5 == 0)
+		{
+			int Epoch = 2;
+			while (Epoch--)
 			{
-			if (nets[i].RunTrainingSetOffline() < 1e-2)
-			break;
-			}*/
+				if (nets[lastAction].RunTrainingSetOffline() < 1e-1)
+					break;
+			}
 		}
-		while (Epoch--)
-		{
-			if (nets[lastAction].RunTrainingSetOffline() < 1e-2)
-				break;
-		}
-		nets[lastAction].MCQLCorrect();
 	}
 
-	debug << "R = " << r << endl;
+	//	debug << "R = " << r << endl;
+	debug << "after check rnd" << endl;
 	if ((dist(eng) % 17) < 3)
 	{
-		debug << "RAND: " << endl;;
+		//	debug << "RAND: " << endl;;
+
+		debug << "before at" << endl;
+		Q = vr.at(0, 0);
+		debug << "after at" << endl;
 		action = rnd % Actions::COUNT;
 	}
 	else
 	{
 
+		debug << "Before Q" << endl;
 		Q = -DBL_MAX;
 		for (int i = 0; i < nets.size(); ++i)
 		{
@@ -1216,111 +1384,49 @@ void MyPlayer::Move()
 				action = i;
 			}
 		}
+		debug << "After Q" << endl;
 	}
 
-	debug << "SELECT " << Q << " " << action << endl << "=================================================================" << endl;
+	//debug << "SELECT " << Q << " " << action << endl << "=================================================================" << endl;
 
 
+	debug << "Before action" << endl;
 	DoAction(this, (Actions)action);
 	FirstStep = false;
 
+	debug << "after action" << endl;
 	lastAction = action;
 	lastQ = Q;
-
-	if (GetHealth() + GetFullness() < 15)
+	debug << "after ==" << endl;
+	debug.flush();
+	if (tick % 1000 == 0)
 	{
+		debug << endl << endl << "======================tick " << tick << "========================================================" << endl;
 		for (int i = 0; i < Actions::COUNT; ++i)
 		{
 			nets[i].debuginfo();
 		}
+		debug.flush();
 	}
 }
 
-#ifdef _DEBUG
+
 int main()
 {
-	double asdsa3 = acos(1.0);
-	double asdsa = acos(-1.0);
-	double asdsa2 = acos(-0.99999999);
-	MyPlayer *me = new MyPlayer();
-	double x, y;
-	double x0 = me->GetX();
-	double y0 = me->GetY();
-	ElementType cur_type;
-	double dist = DBL_MAX;
-	double min_dist = DBL_MAX;
-	double angle = 0.0;
-	double step_angle = 2 * M_PI / 8;
-	double k = tan(angle);
-	double meGetY = 20;
-	double meGetX = 50;
-	double wGetHeight = 480;
-	double wGetWidth = 640;
-	//Y = 0, x = 0..getw
-	dist = DBL_MAX;
-	if (abs(angle - M_PI / 2) <= DBL_EPSILON || abs(angle - 3 * M_PI / 2) <= DBL_EPSILON)
-	{
-		//пересечение только с горизонтальными сторонами
-		dist = min(dist, meGetY);
-		dist = min(dist, wGetHeight - meGetY);
-		if (min_dist > dist)
-		{
-			min_dist = dist;
-			cur_type = ElementType::TBLOCK;
-		}
-	}
-	else if (abs(angle) <= DBL_EPSILON || abs(angle - M_PI) <= DBL_EPSILON)
-	{
-		//пересечение только с вертилкальными сторонами
-		dist = min(dist, meGetX);
-		dist = min(dist, wGetWidth - meGetX);
-		if (min_dist > dist)
-		{
-			min_dist = dist;
-			cur_type = ElementType::TBLOCK;
-		}
-	}
-	else
-	{
-		//случайные пересечения
-		/*
-		система:
-		y = 0, при 0.0 <= x <= getw();
-		y = geth(), при 0.0 <= x <= getw();
-
-		x = 0, при 0.0 <= y <= geth();
-		x = getw(), при 0.0 <= y <= geth();
-		*/
-
-		//y = 0
-		double b = y0 - k*x0;
-		double y = 0.0;
-		double x = (y - b) / k;
-		if (x >= 0.0 && x <= wGetWidth && check(me, x, y, angle, step_angle))
-			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
-		//y=geth
-		y = wGetHeight;
-		x = (y - b) / k;
-		if (x >= 0.0 && x <= wGetWidth && check(me, x, y, angle, step_angle))
-			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - b)*(y - b)));
-
-		//x=0
-		x = 0.0;
-		y = k*x + b;
-		if (y >= 0.0 && y <= wGetHeight && check(me, x, y, angle, step_angle))
-			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - b)*(y - b)));
-
-		//x=getw
-		x = wGetWidth;
-		y = k*x + b;
-		if (y >= 0.0 && y <= wGetHeight && check(me, x, y, angle, step_angle))
-			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - b)*(y - b)));
-		if (min_dist > dist)
-		{
-			min_dist = dist;
-			cur_type = ElementType::TBLOCK;
-		}
-	}
+	NeuroNet::Matrix2d a(3, 3), b;
+	a.at(0, 0) = 1;
+	a.at(0, 1) = 2;
+	a.at(0, 2) = 3;
+	a.at(1, 0) = 4;
+	a.at(1, 1) = 5;
+	a.at(1, 2) = 6;
+	a.at(2, 0) = 7;
+	a.at(2, 1) = 8;
+	a.at(2, 2) = 9;
+	
+	b = a;
+	cout << a << endl << b << endl;
+	cout << "a * b = " << endl << a+b;
+	system("pause");
 	return 0;
 }
-#endif
