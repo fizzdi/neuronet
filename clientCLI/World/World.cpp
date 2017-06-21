@@ -51,8 +51,8 @@ void World::Run() {
 					DWORD PlayerExitCode = OK;
 					GetExitCodeThread(PlayerThread, &PlayerExitCode);
 					
-					debugout << "WaitResult: " << WaitResult << endl;
-					debugout << "PlayerExitCode: " << PlayerExitCode << endl;
+					//debugout << "WaitResult: " << WaitResult << endl;
+					//debugout << "PlayerExitCode: " << PlayerExitCode << endl;
 					
 					Players[j]->RunTime = PlayerExitCode != OK;
 					Players[j]->TimeLimit = WaitResult != WAIT_OBJECT_0;

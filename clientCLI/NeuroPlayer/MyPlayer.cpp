@@ -263,7 +263,7 @@ namespace NeuroNet
 		for (int i = 0; i < m; ++i)
 			for (int j = 0; j < n; ++j)
 				res.at(j, i) = this->at(i, j);
-		return res;
+		return move(res);
 	}
 
 	Matrix2d Matrix2d::operator-() const
@@ -274,7 +274,7 @@ namespace NeuroNet
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
 				res.at(i, j) = -at(i, j);
-		return res;
+		return move(res);
 	}
 
 	Matrix2d& Matrix2d::operator+=(const Matrix2d & rhs)
@@ -294,7 +294,7 @@ namespace NeuroNet
 	Matrix2d Matrix2d::operator+(const Matrix2d & rhs) const
 	{
 		Matrix2d res = *this;
-		return res += rhs;
+		return move(res += rhs);
 	}
 
 	Matrix2d& Matrix2d::operator+=(const double rhs)
@@ -308,7 +308,7 @@ namespace NeuroNet
 	Matrix2d Matrix2d::operator+(const double rhs) const
 	{
 		Matrix2d res = *this;
-		return res += rhs;
+		return move(res += rhs);
 	}
 
 	Matrix2d& Matrix2d::operator-=(const Matrix2d & rhs)
@@ -328,7 +328,7 @@ namespace NeuroNet
 	Matrix2d Matrix2d::operator-(const Matrix2d & rhs) const
 	{
 		Matrix2d res = *this;
-		return res -= rhs;
+		return move(res -= rhs);
 	}
 
 	Matrix2d& Matrix2d::operator-=(const double rhs)
@@ -339,7 +339,7 @@ namespace NeuroNet
 	Matrix2d Matrix2d::operator-(const double rhs) const
 	{
 		Matrix2d res = *this;
-		return res += -rhs;
+		return move(res += -rhs);
 	}
 
 	Matrix2d Matrix2d::operator*(const Matrix2d & rhs) const
@@ -360,7 +360,7 @@ namespace NeuroNet
 			for (int j = 0; j < m; ++j)
 				for (int k = 0; k < nm; ++k)
 					res.at(i, j) += this->at(i, k) * rhs.at(k, j);
-		return res;
+		return move(res);
 	}
 
 	Matrix2d Matrix2d::operator*(const double & rhs)
@@ -372,7 +372,7 @@ namespace NeuroNet
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
 				res.at(i, j) = at(i, j) * rhs;
-		return res;
+		return move(res);
 	}
 
 	Matrix2d& Matrix2d::operator=(const std::vector<std::vector<double>>& rhs)
@@ -425,7 +425,7 @@ namespace NeuroNet
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
 				old.at(i, i) = std::abs(at(i, j));
-		return old;
+		return move(old);
 	}
 
 	Matrix2d Matrix2d::multiplication(const Matrix2d & rhs) const
@@ -440,7 +440,7 @@ namespace NeuroNet
 		for (int i = 0; i < rhs.n; ++i)
 			for (int j = 0; j < rhs.m; ++j)
 				res.at(i, j) = this->at(i, j) * rhs.at(i, j);
-		return res;
+		return move(res);
 	}
 
 	const double Matrix2d::sum() const
@@ -492,7 +492,7 @@ namespace NeuroNet
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
 				res.at(i, j) = std::sqrt(rhs.at(i, j));
-		return res;
+		return move(res);
 	}
 
 	Matrix2d Layer::sigm_function(Matrix2d& x)
@@ -502,7 +502,7 @@ namespace NeuroNet
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
 				res.at(i, j) = x.at(i, j) <= -35 ? x.at(i, j) = 10e-15 : 1.0 / (1.0 + exp(-x.at(i, j)));
-		return res;
+		return move(res);
 	}
 
 	Matrix2d Layer::tanh_function(Matrix2d& x)
@@ -515,7 +515,7 @@ namespace NeuroNet
 				//res(i,j) = (exp(2 * x(i,j)) - 1.0) / (exp(2 * x(i,j)) + 1.0);
 				res.at(i, j) = std::tanh(x.at(i, j));
 			}
-		return res;
+		return move(res);
 	}
 
 	Matrix2d Layer::diff_tanh_function(Matrix2d& x)
@@ -525,7 +525,7 @@ namespace NeuroNet
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
 				res.at(i, j) = 1.0 - x.at(i, j) * x.at(i, j);
-		return res;
+		return move(res);
 	}
 
 	Matrix2d Layer::diff_sigm_function(Matrix2d& x)
@@ -535,7 +535,7 @@ namespace NeuroNet
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
 				res.at(i, j) = (1.0 - x.at(i, j)) * x.at(i, j);
-		return res;
+		return move(res);
 	}
 
 	Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction)
@@ -595,19 +595,19 @@ namespace NeuroNet
 		switch (_aftype)
 		{
 		case SIGM:
-			return diff_sigm_function(Axons);
+			return move(diff_sigm_function(Axons));
 		case LINE:
 		{
 			Matrix2d res(Axons.GetVerticalSize(), Axons.GetHorizontalSize());
 			res.Fill(1.0);
-			return res;
+			return move(res);
 		}
 		case TANH:
-			return diff_tanh_function(Axons);
+			return move(diff_tanh_function(Axons));
 		default:
 			Matrix2d res(Axons.GetVerticalSize(), Axons.GetHorizontalSize());
 			res.Fill(1.0);
-			return res;
+			return move(res);
 			break;
 		}
 	}
