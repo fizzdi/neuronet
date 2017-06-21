@@ -51,10 +51,10 @@ namespace NeuroNet
 	class Matrix2d
 	{
 	private:
-		double* _m;
+		vector<vector<double>> _vm;
 		int n, m;
 	public:
-		Matrix2d() { n = m = 0; _m = nullptr; };
+		Matrix2d() { n = m = 0;};
 		~Matrix2d();
 		Matrix2d(const Matrix2d& rhs);
 		Matrix2d(Matrix2d&& rhs);
@@ -87,7 +87,7 @@ namespace NeuroNet
 		Matrix2d& operator= (Matrix2d &&rhs);
 		Matrix2d& operator= (const std::vector<double> &rhs);
 
-		bool operator== (Matrix2d &rhs);
+		bool operator== (const Matrix2d &rhs);
 
 
 		Matrix2d abs() const;
@@ -200,41 +200,35 @@ namespace NeuroNet
 
 	Matrix2d::~Matrix2d()
 	{
-		if (_m == nullptr) return;
-		delete[](_m);
-		_m = nullptr;
 	}
 
 	Matrix2d::Matrix2d(const Matrix2d & rhs)
 	{
-		if (_m == rhs._m) return;
+		if (*this == rhs) return;
 		this->n = rhs.n;
 		this->m = rhs.m;
-		_m = new double[n*m];
-		memcpy_s(_m, n*m * sizeof(*_m), rhs._m, n*m * sizeof(*rhs._m));
+		_vm = rhs._vm;
 	}
 
 	Matrix2d::Matrix2d(Matrix2d && rhs)
 	{
-		_m = move(rhs._m);
+		_vm = move(rhs._vm);
 		n = rhs.n;
 		m = rhs.m;
-		rhs._m = nullptr;
 	}
 
 	Matrix2d::Matrix2d(int n, int m)
 	{
 		this->n = n;
 		this->m = m;
-		_m = new double[n*m];
+		_vm.resize(n, vector<double>(m));
 	}
 
 	Matrix2d::Matrix2d(const std::vector<double>& rhs)
 	{
 		this->n = 1;
 		this->m = rhs.size();
-		_m = new double[m];
-		memcpy_s(_m, n*m * sizeof(*_m), rhs.data(), n*m * sizeof(*rhs.data()));
+		_vm[0] = rhs;
 	}
 
 	void Matrix2d::Fill(double val)
@@ -383,62 +377,44 @@ namespace NeuroNet
 
 	Matrix2d& Matrix2d::operator=(const std::vector<std::vector<double>>& rhs)
 	{
-
-		if (_m != nullptr)
-			delete[](_m);
 		this->n = rhs.size();
 		this->m = n > 0 ? rhs[0].size() : 0;
-		_m = new double[n*m];
-
-		for (int i = 0; i < (int)rhs.size(); ++i)
-			memcpy_s(_m + (i*m) * sizeof(*_m), m * sizeof(*_m), rhs.data(), m * sizeof(*rhs.data()));
+		_vm = rhs;
 		return *this;
 	}
 
 	Matrix2d& Matrix2d::operator=(const Matrix2d & rhs)
 	{
-		if (rhs._m == _m)
-		{
+		if (*this == rhs)
 			return *this;
-		}
-
-		if (_m != nullptr)
-			delete[](_m);
-
 
 		this->n = rhs.n;
 		this->m = rhs.m;
-		_m = new double[n*m];
-
-		memcpy_s(_m, n*m * sizeof(*_m), rhs._m, n*m * sizeof(*rhs._m));
+		_vm = rhs._vm;
 		return *this;
 	}
 
 	Matrix2d & Matrix2d::operator=(Matrix2d && rhs)
 	{
-		if (this->_m == rhs._m) return *this;
-		_m = move(rhs._m);
+		if (*this == rhs) return *this;
+		_vm = move(rhs._vm);
 		n = rhs.n;
 		m = rhs.m;
 
-		rhs._m = nullptr;
 		return *this;
 	}
 
 	Matrix2d& Matrix2d::operator=(const std::vector<double>& rhs)
 	{
-		if (_m != nullptr)
-			delete[](_m);
 		this->n = 1;
 		this->m = rhs.size();
-		_m = new double[n*m];
-		memcpy_s(_m, n*m * sizeof(*_m), rhs.data(), n*m * sizeof(*rhs.data()));
+		_vm[0] = rhs;
 		return *this;
 	}
 
-	bool Matrix2d::operator==(Matrix2d & rhs)
+	bool Matrix2d::operator==(const Matrix2d & rhs)
 	{
-		return n == rhs.n && m == rhs.m && _m == rhs._m;
+		return n == rhs.n && m == rhs.m && _vm == rhs._vm;
 	}
 
 	Matrix2d Matrix2d::abs() const
@@ -483,7 +459,7 @@ namespace NeuroNet
 			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
 			throw std::logic_error("Wrong sizes in at operation");
 		}
-		return _m[i*m + j];
+		return _vm[i][j];
 	}
 
 	double Matrix2d::at(const int i, const int j) const
@@ -493,7 +469,7 @@ namespace NeuroNet
 			debug << ERRORDEF << " " << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << endl;
 			throw std::logic_error("Wrong sizes in at operation");
 		}
-		return _m[i*m + j];
+		return _vm[i][j];
 	}
 
 	std::ostream & operator<<(std::ostream & os, const Matrix2d & m)
