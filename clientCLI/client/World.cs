@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Diagnostics;
 using WorldCLR;
+using System.Windows.Forms;
 
 namespace client
 {
@@ -51,7 +52,16 @@ namespace client
                     destroyWorld();
                 _world = LoadLibrary("World.dll");
                 */
-                rw = new RunWorld();
+                try
+                {
+                    rw = new RunWorld();
+                }
+                catch(Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                    MessageBox.Show(ex.StackTrace);
+                    
+                }
             }
             catch (Exception ex)
             {

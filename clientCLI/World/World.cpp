@@ -47,12 +47,12 @@ void World::Run() {
 					//debugout << "Run thread" << endl;
 					//debugout << "Coords: " << Players[j]->GetX() << " " << Players[j]->GetY() << endl;
 					auto PlayerThread = CreateThread(0, NULL, DoMove, (LPVOID)Players[j], NULL, NULL);
-					auto WaitResult = WaitForSingleObject(PlayerThread, 50000);
+					auto WaitResult = WaitForSingleObject(PlayerThread, 500000);
 					DWORD PlayerExitCode = OK;
 					GetExitCodeThread(PlayerThread, &PlayerExitCode);
 					
-					//debugout << "WaitResult: " << WaitResult << endl;
-					//debugout << "PlayerExitCode: " << PlayerExitCode << endl;
+					debugout << "WaitResult: " << WaitResult << endl;
+					debugout << "PlayerExitCode: " << PlayerExitCode << endl;
 					
 					Players[j]->RunTime = PlayerExitCode != OK;
 					Players[j]->TimeLimit = WaitResult != WAIT_OBJECT_0;

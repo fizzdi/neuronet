@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -5,7 +6,6 @@
 #include "MyPlayer.h"
 #include <fstream>
 #include <ctime>
-#include <exception>
 #include <climits>
 #include <omp.h>
 #include <random>
@@ -13,6 +13,7 @@
 
 using namespace std;
 #define EPS (1e-4)
+#define ERRORDEF "ERROR##$#"
 ofstream debug("neurodebug.txt");
 std::mt19937 eng;
 std::uniform_int_distribution<> dist(1, 50000);
@@ -46,16 +47,16 @@ namespace NeuroNet
 	{
 	private:
 		double* _m;
-		bool inited;
 		int n, m;
 	public:
-		Matrix2d() { inited = false; n = 0; m = 0; };
-		Matrix2d(int n, int m, double val = 0.0);
+		Matrix2d() { n = m = 0; _m = nullptr; };
+		~Matrix2d();
+		Matrix2d(const Matrix2d& rhs);
+		Matrix2d(Matrix2d&& rhs);
+		Matrix2d(int n, int m);
 		Matrix2d(const std::vector<double> &rhs);
-		void Init(int n, int m);
-		void InitFill(int n, int m, double val = 0.0);
 		void Fill(double val = 0.0);
-		void InitRandom(int n, int m, double minv = -1.0, double maxv = 1.0);
+		void InitRandom(double minv = -1.0, double maxv = 1.0);
 
 		int GetHorizontalSize() const;
 		int GetVerticalSize() const;
@@ -78,6 +79,7 @@ namespace NeuroNet
 
 		Matrix2d& operator= (const std::vector<std::vector<double>> &rhs);
 		Matrix2d& operator= (const Matrix2d &rhs);
+		Matrix2d& operator= (Matrix2d &&rhs);
 		Matrix2d& operator= (const std::vector<double> &rhs);
 
 		Matrix2d abs() const;
@@ -140,7 +142,7 @@ namespace NeuroNet
 
 		//----------------------------------
 		//Functions
-		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction, bool bias = false);
+		Layer(int neuronCount, int prevNeuronCount, AFType activationFunction);
 		void CalculateStates(Layer &prevLayer);
 		void CalculateAxons();
 		void NguenWidrow(double Xmin, double Xmax, double Ymin, double Ymax);
@@ -150,14 +152,12 @@ namespace NeuroNet
 	class ElmanNetwork
 	{
 	protected:
-		std::vector<Layer> _layers;
 		int _countlayers;
 	public:
+		std::vector<Layer> _layers;
 		ElmanNetwork() {};
 		ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
 		std::vector<Matrix2d> eligibility;
-		void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
-		//void Run();
 		void Run();
 		void Run(const std::vector<double>& input);
 		void Run(Matrix2d &input);
@@ -190,43 +190,48 @@ namespace NeuroNet
 		return vmin + rand() * (vmax - vmin) / RAND_MAX;//
 	}
 
-	Matrix2d::Matrix2d(int n, int m, double val)
+	Matrix2d::~Matrix2d()
 	{
+		if (_m == nullptr) return;
+		delete[](_m);
+		_m = nullptr;
+	}
+
+	Matrix2d::Matrix2d(const Matrix2d & rhs)
+	{
+		if (_m == rhs._m) return;
+		this->n = rhs.n;
+		this->m = rhs.m;
 		_m = new double[n*m];
-		inited = true;
+		memcpy_s(_m, n*m * sizeof(_m), rhs._m, n*m * sizeof(rhs._m));
+	}
+
+	Matrix2d::Matrix2d(Matrix2d && rhs)
+	{
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		_m = move(rhs._m);
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		n = rhs.n;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		m = rhs.m;
+
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		rhs._m = nullptr;
+	}
+
+	Matrix2d::Matrix2d(int n, int m)
+	{
 		this->n = n;
 		this->m = m;
+		_m = new double[n*m];
 	}
 
 	Matrix2d::Matrix2d(const std::vector<double>& rhs)
 	{
-		Init(1, rhs.size());
-		memcpy_s(_m, sizeof(_m), rhs.data(), sizeof(rhs.data()));
-	}
-
-	void Matrix2d::Init(int n, int m)
-	{
-		if (!inited)
-		{
-			_m = new double[n*m];
-			inited = true;
-			this->n = n;
-			this->m = m;
-		}
-
-		if (inited && (this->n != n || this->m != m))
-		{
-			delete(_m);
-			_m = new double[n*m];
-			this->n = n;
-			this->m = m;
-		}
-	}
-
-	void Matrix2d::InitFill(int n, int m, double val)
-	{
-		Init(n, m);
-		Fill(val);
+		this->n = 1;
+		this->m = rhs.size();
+		_m = new double[m];
+		memcpy_s(_m, n*m * sizeof(_m), rhs.data(), n*m * sizeof(rhs.data()));
 	}
 
 	void Matrix2d::Fill(double val)
@@ -236,16 +241,11 @@ namespace NeuroNet
 				at(i, j) = val;
 	}
 
-	void Matrix2d::InitRandom(int n, int m, double minv, double maxv)
+	void Matrix2d::InitRandom(double minv, double maxv)
 	{
-		Init(n, m);
 		for (int i = 0; i < n; ++i)
-		{
 			for (int j = 0; j < m; ++j)
-			{
-				_m[i*m + j] = getRand(minv, maxv);
-			}
-		}
+				at(i, j) = getRand(minv, maxv);
 	}
 
 	int Matrix2d::GetHorizontalSize() const
@@ -260,10 +260,9 @@ namespace NeuroNet
 
 	Matrix2d Matrix2d::operator!() const
 	{
-		Matrix2d res;
 		int m = GetVerticalSize();
 		int n = GetHorizontalSize();
-		res.Init(n, m);
+		Matrix2d res(n, m);
 		for (int i = 0; i < m; ++i)
 			for (int j = 0; j < n; ++j)
 				res.at(j, i) = this->at(i, j);
@@ -350,7 +349,6 @@ namespace NeuroNet
 		int nm = GetHorizontalSize();
 		Matrix2d res(n, m);
 
-#pragma omp parallel for private(j,k,res.at(i,j))
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
 				for (int k = 0; k < nm; ++k)
@@ -372,35 +370,87 @@ namespace NeuroNet
 
 	Matrix2d& Matrix2d::operator=(const std::vector<std::vector<double>>& rhs)
 	{
-		Init(rhs.size(), rhs.size() > 0 ? rhs[0].size() : 0);
+
+		if (_m != nullptr)
+			delete[](_m);
+		this->n = rhs.size();
+		this->m = n > 0 ? rhs[0].size() : 0;
+		_m = new double[n*m];
+
 		for (int i = 0; i < (int)rhs.size(); ++i)
-			memcpy_s(_m + (i*m)*sizeof(_m), sizeof(_m), rhs.data(), sizeof(rhs.data()));
+			memcpy_s(_m + (i*m) * sizeof(_m), m * sizeof(_m), rhs.data(), m * sizeof(rhs.data()));
 		return *this;
 	}
 
 	Matrix2d& Matrix2d::operator=(const Matrix2d & rhs)
 	{
-		Init(rhs.n, rhs.m);
-		memcpy_s(_m, sizeof(_m), rhs._m, sizeof(rhs._m));
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &rhs << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _m << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << rhs._m << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << (rhs._m == _m) << endl;
+		if (_m != nullptr && rhs._m == _m)
+		{
+			debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+			return *this;
+		}
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+
+			if (_m != nullptr)
+				delete[](_m);
+			debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+
+
+		this->n = rhs.n;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		this->m = rhs.m;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		_m = new double[n*m];
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		memcpy_s(_m, n*m * sizeof(_m), rhs._m, n*m * sizeof(rhs._m));
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		return *this;
+	}
+
+	Matrix2d & Matrix2d::operator=(Matrix2d && rhs)
+	{
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		if (this->_m == rhs._m) return *this;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		_m = move(rhs._m);
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		n = rhs.n;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		m = rhs.m;
+
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		rhs._m = nullptr;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
 		return *this;
 	}
 
 	Matrix2d& Matrix2d::operator=(const std::vector<double>& rhs)
 	{
-		Init(1, rhs.size());
-		memcpy_s(_m, sizeof(_m), rhs.data(), sizeof(rhs.data()));
+		if (_m != nullptr)
+			delete[](_m);
+		this->n = 1;
+		this->m = rhs.size();
+		_m = new double[n*m];
+		memcpy_s(_m, n*m * sizeof(_m), rhs.data(), n*m * sizeof(rhs.data()));
 		return *this;
 	}
 
 	Matrix2d Matrix2d::abs() const
 	{
-		Matrix2d old;
 		int n = GetVerticalSize();
 		int m = GetHorizontalSize();
-		old.Init(n, m);
+		Matrix2d old(n, m);
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
-				old.at(i,i) = std::abs(at(i, j));
+				old.at(i, i) = std::abs(at(i, j));
 		return old;
 	}
 
@@ -427,11 +477,19 @@ namespace NeuroNet
 
 	double & Matrix2d::at(const int i, const int j)
 	{
+		if (i*m + j >= n*m)
+		{
+			debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		}
 		return _m[i*m + j];
 	}
 
 	double Matrix2d::at(const int i, const int j) const
 	{
+		if (i*m + j >= n*m)
+		{
+			debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		}
 		return _m[i*m + j];
 	}
 
@@ -440,7 +498,7 @@ namespace NeuroNet
 		for (int j = 0; j < m.GetVerticalSize(); ++j)
 		{
 			for (int k = 0; k < m.GetHorizontalSize(); ++k)
-				os << m.at(j,k) << " ";
+				os << m.at(j, k) << " ";
 			os << std::endl;
 		}
 
@@ -449,13 +507,12 @@ namespace NeuroNet
 
 	Matrix2d sqrt(const Matrix2d & rhs)
 	{
-		Matrix2d res;
 		int n = rhs.GetVerticalSize();
 		int m = rhs.GetHorizontalSize();
-		res.Init(n, m);
+		Matrix2d res(n, m);
 		for (int i = 0; i < n; ++i)
 			for (int j = 0; j < m; ++j)
-				res.at(i,j) = std::sqrt(rhs.at(i, j));
+				res.at(i, j) = std::sqrt(rhs.at(i, j));
 		return res;
 	}
 
@@ -502,27 +559,32 @@ namespace NeuroNet
 		return res;
 	}
 
-	Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction, bool bias)
+	Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction)
 	{
 		_aftype = activationFunction;
-		Weights.InitRandom(neuronCount, prevNeuronCount, -1, 1);
-		States.Init(1, neuronCount);
-		Axons.Init(1, neuronCount);
-		Delta.Init(1, neuronCount);
-		LastDelta.Init(1, neuronCount);
-		Grad.Init(neuronCount, prevNeuronCount);
-		LastGrad.Init(neuronCount, prevNeuronCount);
-		CorrectVal.InitRandom(neuronCount, prevNeuronCount, 0, 1);
-		DeltaSum.InitFill(1, neuronCount);
-		GradSum.InitFill(neuronCount, prevNeuronCount);
-		LastDeltaSum.InitFill(1, neuronCount);
-		LastGradSum.InitFill(neuronCount, prevNeuronCount);
+		Weights = Matrix2d(neuronCount, prevNeuronCount);
+		States = Matrix2d(1, neuronCount);
+		Axons = Matrix2d(1, neuronCount);
+		Delta = Matrix2d(1, neuronCount);
+		LastDelta = Matrix2d(1, neuronCount);
+		Grad = Matrix2d(neuronCount, prevNeuronCount);
+		LastGrad = Matrix2d(neuronCount, prevNeuronCount);
+		CorrectVal = Matrix2d(neuronCount, prevNeuronCount);
+		DeltaSum = Matrix2d(1, neuronCount);
+		GradSum = Matrix2d(neuronCount, prevNeuronCount);
+		LastDeltaSum = Matrix2d(1, neuronCount);
+		LastGradSum = Matrix2d(neuronCount, prevNeuronCount);
+		Bias = Matrix2d(1, neuronCount);
+		BiasCorrectVal = Matrix2d(1, neuronCount);
 
-		if (bias)
-			Bias.InitRandom(1, neuronCount);
-		else Bias.InitFill(1, neuronCount);
-		//BiasCorrectVal.InitFill(1, neuronCount, 0.1);
-		BiasCorrectVal.InitRandom(1, neuronCount);
+		Weights.InitRandom(0, 1);
+		CorrectVal.InitRandom(0, 1);
+		DeltaSum.Fill(0.0);
+		GradSum.Fill(0.0);
+		LastDeltaSum.Fill(0.0);
+		LastGradSum.Fill(0.0);
+		BiasCorrectVal.InitRandom(-1.0, 1.0);
+		Bias.InitRandom(-1.0, 1.0);
 	}
 
 	//TODO add const operation
@@ -556,11 +618,17 @@ namespace NeuroNet
 		case SIGM:
 			return diff_sigm_function(Axons);
 		case LINE:
-			return Matrix2d(Axons.GetVerticalSize(), Axons.GetHorizontalSize(), 1.0);
+		{
+			Matrix2d res(Axons.GetVerticalSize(), Axons.GetHorizontalSize());
+			res.Fill(1.0);
+			return res;
+		}
 		case TANH:
 			return diff_tanh_function(Axons);
 		default:
-			return Matrix2d(Axons.GetVerticalSize(), Axons.GetHorizontalSize(), 1.0);
+			Matrix2d res(Axons.GetVerticalSize(), Axons.GetHorizontalSize());
+			res.Fill(1.0);
+			return res;
 			break;
 		}
 	}
@@ -614,7 +682,7 @@ namespace NeuroNet
 			_layers[i].GradSum.Fill(0.0);
 			_layers[i].DeltaSum.Fill(0.0);
 		}
-		int TestCount = 20;
+		int TestCount = 2;
 		if (TrainingSet.size() <= TestCount)
 		{
 			for (int t = 0; t < TrainingSet.size(); ++t)
@@ -884,49 +952,38 @@ namespace NeuroNet
 
 	ElmanNetwork::ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
 	{
-		Init(InputCount, OutputCount, NeuronCount, HiddenLayerFunction);
-	}
-
-	void ElmanNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
-	{
 		_layers.clear();
-		_layers.push_back(Layer(InputCount + NeuronCount, 0, LINE));
-		_layers.push_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction, true));
+		_layers.emplace_back(Layer(InputCount + NeuronCount, 0, LINE));
+		_layers.emplace_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction));
 		_layers.back().NguenWidrow(-2, 2, -1, 1);
-		_layers.push_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction, true));
+		_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
 		_layers.back().NguenWidrow(-2, 2, -1, 1);
-		_layers.push_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction, true));
+		_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
 		_layers.back().NguenWidrow(-2, 2, -1, 1);
-		_layers.push_back(Layer(OutputCount, NeuronCount, LINE, true));
+		_layers.emplace_back(Layer(OutputCount, NeuronCount, LINE));
 		//_layers.back().NguenWidrow(-1, 1, -1, 1);
 		_countlayers = _layers.size();
 
 		eligibility.resize(_countlayers);
 		for (int i = 0; i < _countlayers; ++i)
-			eligibility[i].InitFill(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
-
-		//debug << _layers[1].Weights.at(0, 0) << endl << endl;;
+		{
+			eligibility[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
+			eligibility[i].Fill(0.0);
+		}
 	}
 
 	void ElmanNetwork::Run()
 	{
-		try {
-			//init hidden and output layers
-			for (int i = 1; i < (int)_layers.size(); ++i)
-			{
-				_layers[i].CalculateStates(_layers[i - 1]);
-				_layers[i].CalculateAxons();
-			}
-
-			//copy hidden into input (context)
-			for (int i = 1; i <= _layers[1].Axons.GetHorizontalSize(); ++i)
-				_layers[0].States.at(0, _layers[0].States.GetHorizontalSize() - i) = _layers[1].Axons.at(0, _layers[1].Axons.GetHorizontalSize() - i);
-		}
-		catch (std::exception ex)
+		//init hidden and output layers
+		for (int i = 1; i < (int)_layers.size(); ++i)
 		{
-			debug << "EXCEPTION: " << endl << ex.what() << endl;
-			throw new std::exception("Exit");
+			_layers[i].CalculateStates(_layers[i - 1]);
+			_layers[i].CalculateAxons();
 		}
+
+		//copy hidden into input (context)
+		for (int i = 1; i <= _layers[1].Axons.GetHorizontalSize(); ++i)
+			_layers[0].States.at(0, _layers[0].States.GetHorizontalSize() - i) = _layers[1].Axons.at(0, _layers[1].Axons.GetHorizontalSize() - i);
 	}
 
 	void ElmanNetwork::Run(const std::vector<double>& input)
@@ -945,17 +1002,40 @@ namespace NeuroNet
 	}
 	void ElmanNetwork::AddTest(const vector<double> &ideal) const
 	{
+		debug << "before pr" << endl;
 		auto pr = Problem();
+		debug << "before pr.inputs1" << endl;
 		pr.inputs = _layers[0].States;
+		debug << "before pr.outputs" << endl;
 		pr.outputs = ideal;
-		TrainingSet.push_back(pr);
+		debug << "before TrainingSet.emplace_back" << endl;
+		TrainingSet.emplace_back(pr);
 	}
 	void ElmanNetwork::AddTest(Matrix2d& ideal) const
 	{
+		debug << "NETS ADR" << this << endl;
+
+		debug << "NETS " << _layers.size() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		debug << "NETS " << _layers.size() << endl;
 		auto pr = Problem();
+		debug << "NETS " << _layers.size() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _layers.size() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &_layers << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &_layers[0] << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << &_layers[0].States << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _layers[0].States.GetHorizontalSize() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << _layers[0].States.GetVerticalSize() << endl;
+		debug << "NETS " << _layers.size() << endl;
 		pr.inputs = _layers[0].States;
+		debug << "NETS " << _layers.size() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		debug << "NETS " << _layers.size() << endl;
 		pr.outputs = ideal;
-		TrainingSet.push_back(pr);
+		debug << "NETS " << _layers.size() << endl;
+		debug << string(__FILE__) << "(" << __LINE__ << "):" << string(__FUNCTION__) << ERRORDEF << endl;
+		TrainingSet.emplace_back(pr);
 	}
 }
 
@@ -1000,7 +1080,7 @@ void MyPlayer::Init()
 	for (int i = 0; i < nets.size(); ++i)
 	{
 		//	debug << "net " << i << endl;
-		nets[i].Init(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
+		nets[i] = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
 		//	debug << "net " << i << "inited" << endl << endl;
 	}
 	//net.InitFill(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
@@ -1208,24 +1288,30 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 
 
 }
+NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT);
 
 int lasttest = -1;
 int tick = -1;
 void MyPlayer::Move()
 {
+	debug << "NETS " << nets[0]._layers.size() << " " << nets[1]._layers.size() << " " << nets[2]._layers.size() << " " << nets[3]._layers.size() << " " << endl;
 	tick++;
-	//Input order: My coordinates, Health, Fullness, Angle, Food coordinates, Enemy coordinates, Trap coordinates, Poison coordinates, Cornucopia coordinates, Block coordinates
-	NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT, -1.0);
+	debug << "TICK " << tick << endl;
 
 	/////////////////////////////////////////////////////////////////////
 	///////////////////////// InitFill input vector /////////////////////////
+	inputs.Fill(-1.0);
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
+	debug << "after inputs set" << endl;
 	//debug << inputs << endl;
 	vr.at(0, 0) = GetFullness();
+	debug << "after fullnes" << endl;
 
 	int action = -1;
 	int rnd = dist(eng);
+	debug << "after rnd" << endl;
+
 	if (!FirstStep)
 	{
 		/*int maxtests = 500;
@@ -1237,11 +1323,16 @@ void MyPlayer::Move()
 			while (ct--)
 				vp.push_back(TrainingSet[dist(eng) % TrainingSet.size()]);
 		}*/
+		debug << "before AddTest" << endl;
+		debug << "NETS " << nets[0]._layers.size() << " " << nets[1]._layers.size() << " " << nets[2]._layers.size() << " " << nets[3]._layers.size() << " " << endl;
+		debug << "NETS ADR act " << lastAction << endl;
+		debug << "NETS ADR old " << &nets[lastAction] << endl;
 		nets[lastAction].AddTest(vr);
+		debug << "NETS " << nets[0]._layers.size() << " " << nets[1]._layers.size() << " " << nets[2]._layers.size() << " " << nets[3]._layers.size() << " " << endl;
+		debug << "after AddTest" << endl;
 		if (tick % 5 == 0)
 		{
-			debug << "TICK " << tick << endl;
-			int Epoch = 20;
+			int Epoch = 2;
 			while (Epoch--)
 			{
 				if (nets[lastAction].RunTrainingSetOffline() < 1e-1)
@@ -1251,23 +1342,26 @@ void MyPlayer::Move()
 	}
 
 	//	debug << "R = " << r << endl;
+	debug << "after check rnd" << endl;
 	if ((dist(eng) % 17) < 3)
 	{
 		//	debug << "RAND: " << endl;;
 
+		debug << "before at" << endl;
 		Q = vr.at(0, 0);
+		debug << "after at" << endl;
 		action = rnd % Actions::COUNT;
 	}
 	else
 	{
 
-		debug << "Before Learn" << endl;
+		debug << "Before Q" << endl;
 		Q = -DBL_MAX;
 		for (int i = 0; i < nets.size(); ++i)
 		{
 			nets[i].Run(inputs);
 			double curQ = nets[i].GetOut().sum();
-			//debug << curQ << " " << i << endl;
+			debug << curQ << " " << i << endl;
 
 			if (Q < curQ)
 			{
@@ -1275,18 +1369,21 @@ void MyPlayer::Move()
 				action = i;
 			}
 		}
-		debug << "After Learn" << endl;
+		debug << "After Q" << endl;
 	}
 
 	//debug << "SELECT " << Q << " " << action << endl << "=================================================================" << endl;
 
 
+	debug << "Before action" << endl;
 	DoAction(this, (Actions)action);
 	FirstStep = false;
 
+	debug << "after action" << endl;
 	lastAction = action;
 	lastQ = Q;
-
+	debug << "after ==" << endl;
+	debug.flush();
 	if (tick % 1000 == 0)
 	{
 		debug << endl << endl << "======================tick " << tick << "========================================================" << endl;
