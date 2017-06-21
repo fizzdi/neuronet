@@ -3,6 +3,28 @@
 
 using namespace NeuroNet;
 
+ElmanNetwork::ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
+{
+	_layers.clear();
+	_layers.emplace_back(Layer(InputCount + NeuronCount, 0, LINE));
+	_layers.emplace_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction));
+	_layers.back().NguenWidrow(-2, 2, -1, 1);
+	_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
+	_layers.back().NguenWidrow(-2, 2, -1, 1);
+	/*_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
+	_layers.back().NguenWidrow(-2, 2, -1, 1);*/
+	_layers.emplace_back(Layer(OutputCount, NeuronCount, LINE));
+	//_layers.back().NguenWidrow(-1, 1, -1, 1);
+	_countlayers = _layers.size();
+
+	eligibility.resize(_countlayers);
+	for (int i = 0; i < _countlayers; ++i)
+	{
+		eligibility[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
+		eligibility[i].Fill(0.0);
+	}
+}
+
 double ElmanNetwork::RunTrainingSetOffline(std::deque<Problem> &TrainingSet, bool print)
 {
 	for (int i = 0; i < _countlayers; ++i)
@@ -233,27 +255,6 @@ Matrix2d ElmanNetwork::GetOut() const
 	return _layers.back().Axons;
 }
 
-ElmanNetwork::ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
-{
-	_layers.clear();
-	_layers.emplace_back(Layer(InputCount + NeuronCount, 0, LINE));
-	_layers.emplace_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction));
-	_layers.back().NguenWidrow(-2, 2, -1, 1);
-	_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
-	_layers.back().NguenWidrow(-2, 2, -1, 1);
-	_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
-	_layers.back().NguenWidrow(-2, 2, -1, 1);
-	_layers.emplace_back(Layer(OutputCount, NeuronCount, LINE));
-	//_layers.back().NguenWidrow(-1, 1, -1, 1);
-	_countlayers = _layers.size();
-
-	eligibility.resize(_countlayers);
-	for (int i = 0; i < _countlayers; ++i)
-	{
-		eligibility[i] = Matrix2d(_layers[i].Grad.GetVerticalSize(), _layers[i].Grad.GetHorizontalSize());
-		eligibility[i].Fill(0.0);
-	}
-}
 
 void ElmanNetwork::Run()
 {

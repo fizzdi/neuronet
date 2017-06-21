@@ -18,18 +18,6 @@ Matrix2d::Matrix2d(const Matrix2d & rhs)
 	memcpy_s(_m, n*m * sizeof(*_m), rhs._m, n*m * sizeof(*rhs._m));
 }
 
-Matrix2d::Matrix2d(Matrix2d && rhs)
-{
-/*	if (n > 0 && n < 1500000)
-	{
-		delete[] _m;
-	}*/
-	_m = std::move(rhs._m);
-	n = rhs.n;
-	m = rhs.m;
-	rhs._m = nullptr;
-}
-
 Matrix2d::Matrix2d(int n, int m)
 {
 	this->n = n;
@@ -156,7 +144,7 @@ Matrix2d Matrix2d::operator-(const double rhs) const
 	return std::move(res += -rhs);
 }
 
-Matrix2d Matrix2d::operator*(const Matrix2d & rhs) const
+Matrix2d Matrix2d::operator*(const Matrix2d & rhs)
 {
 	if (GetHorizontalSize() != rhs.GetVerticalSize())
 	{
@@ -223,18 +211,6 @@ Matrix2d& Matrix2d::operator=(const Matrix2d & rhs)
 	return *this;
 }
 
-Matrix2d & Matrix2d::operator=(Matrix2d && rhs)
-{
-	if (*this == rhs) return *this;
-	delete[](_m);
-	_m = std::move(rhs._m);
-	n = rhs.n;
-	m = rhs.m;
-
-	rhs._m = nullptr;
-	return *this;
-}
-
 Matrix2d& Matrix2d::operator=(const std::vector<double>& rhs)
 {
 	//if (_m != nullptr)
@@ -286,23 +262,43 @@ const double Matrix2d::sum() const
 	return ans;
 }
 
-double & Matrix2d::at(const int i, const int j)
+double & Matrix2d::at(const int &i, const int &j)
 {
-	if (i >= n || j >= m)
+	/*if (i >= n || j >= m)
+	{
+		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		throw std::logic_error("Wrong sizes in at operation");
+	}*/
+	return _m[i*m + j];
+}
+
+/*double & Matrix2d::at(const int i, const int j)
+{
+	/*if (i >= n || j >= m)
 	{
 		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		throw std::logic_error("Wrong sizes in at operation");
 	}
 	return _m[i*m + j];
-}
+}*/
 
-double Matrix2d::at(const int i, const int j) const
+/*double Matrix2d::at(const int i, const int j) const
 {
-	if (i >= n || j >= m)
+	/*if (i >= n || j >= m)
 	{
 		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		throw std::logic_error("Wrong sizes in at operation");
 	}
+	return _m[i*m + j];
+}*/
+
+double Matrix2d::at(const int& i, const int& j) const
+{
+	/*if (i >= n || j >= m)
+	{
+		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		throw std::logic_error("Wrong sizes in at operation");
+	}*/
 	return _m[i*m + j];
 }
 

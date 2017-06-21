@@ -9,7 +9,7 @@
 //Neural config
 const int SENSOR_COUNT = 8;
 const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
-const int HIDDEN_NEURON_COUNT = 40;
+const int HIDDEN_NEURON_COUNT = 50;
 const int OUTPUT_NEURON_COUNT = 1;
 const int TEST_COUNT = 300;
 const int TRAIN_EPOCH = 10;

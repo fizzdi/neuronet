@@ -1,5 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
-#define _CRTDBG_MAP_ALLOC #include <stdlib.h> #include <crtdbg.h>
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -84,29 +82,40 @@ void MyPlayer::Init()
 	//net.InitFill(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
 }
 
-bool check(Element *player, double x, double y, double angle, double step_angle)
+bool check(Element *player, double x, double y, double r, double angle, double step_angle) 
 {
-	double vx = 10 * cos(angle);
-	double vy = 10 * sin(angle);
-	double vx2 = x - player->GetX();
-	double vy2 = y - player->GetY();
-	double cosa = (vx*vx2 + vy*vy2) *1.0 /
-		(
-			sqrt(vx*vx + vy*vy)
-			*sqrt(vx2*vx2 + vy2*vy2)
-			);
-	cosa = max(-1.0 + EPS, cosa);
-	cosa = min(1.0 - EPS, cosa);
-	double angleB = acos(cosa);
-	if (angleB < -FLT_MAX)
-		int y = 0;
-	return abs(angleB) <= step_angle / 2.0 + EPS;
+	double x0 = player->GetX(), y0 = player->GetY();
+	double x2 = x0 + 1.0 * cos(angle), y2 = y0 - 1.0*sin(angle);
+	double k = (y2 - y0) / (x2 - x0), b = -x0*k + y0;
+	if (abs(x2 - x0) <= EPS) {
+		double Ds = r*r - (y0 - y)*(y0 - y);
+		if (Ds >= 0.0) {
+			double cross_x1 = sqrt(Ds) + x, cross_y1 = y0;
+			double cosv = ((cross_x1 - x0)*(x2 - x0) + (cross_y1 - y0)*(y2 - y0)) / (sqrt((cross_x1 - x0)*(cross_x1 - x0) + (cross_y1 - y0)*(cross_y1 - y0)));
+			if (cosv >= -EPS) {
+				return true;
+			}
+			return false;
+		}
+	}
+	else {
+		double Ds = (x - k*(b - y))*(x - k*(b - y)) - (1 + k*k)*(x*x + (b - y)*(b - y) - r*r);
+		if (Ds >= 0.0) {
+			double cross_x1 = ((x - k*(b - y)) + sqrt(Ds)) / (1 + k*k), cross_y1 = k*cross_x1 + b;
+			double cosv = ((cross_x1 - x0)*(x2 - x0) + (cross_y1 - y0)*(y2 - y0)) / (sqrt((cross_x1 - x0)*(cross_x1 - x0) + (cross_y1 - y0)*(cross_y1 - y0)));
+			if (cosv >= -EPS) {
+				return true;
+			}
+			return false;
+		}
+	}
+	return false;
 }
 
 
 bool check(Element *player, Element *elem, double angle, double step_angle)
 {
-	return check(player, elem->GetX(), elem->GetY(), angle, step_angle);
+	return check(player, elem->GetX(), elem->GetY(), elem->GetR(), angle, step_angle);
 }
 
 
@@ -115,20 +124,28 @@ string elty[] = { "FOOD", "ENEMY", "BLOCK", "COUNT" };
 
 pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, double step_angle)
 {
-	double x, y;
 	double x0 = me->GetX();
 	double y0 = me->GetY();
-	double k = tan(angle);
+	double k = -tan(angle);
 	double angleB;
 
 	//Y = 0, x = 0..getw
 	double dist = DBL_MAX;
 	double min_dist = DBL_MAX;
 	ElementType cur_type = ElementType::TENEMY;
-	if (abs(angle - M_PI / 2) <= DBL_EPSILON || abs(angle - 3 * M_PI / 2) <= DBL_EPSILON)
+	if (abs(angle - M_PI / 2) <= DBL_EPSILON)
 	{
 		//пересечение только с горизонтальными сторонами
 		dist = min(dist, me->GetY());
+		if (min_dist > dist)
+		{
+			min_dist = dist;
+			cur_type = ElementType::TBLOCK;
+		}
+	}
+	else if (abs(angle - 3 * M_PI / 2) <= DBL_EPSILON)
+	{
+		//пересечение только с горизонтальными сторонами
 		dist = min(dist, w->GetHeight() - me->GetY());
 		if (min_dist > dist)
 		{
@@ -136,11 +153,20 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 			cur_type = ElementType::TBLOCK;
 		}
 	}
-	else if (abs(angle) <= DBL_EPSILON || abs(angle - M_PI) <= DBL_EPSILON)
+	else if (abs(angle) <= DBL_EPSILON)
+	{
+		//пересечение только с вертилкальными сторонами
+		dist = min(dist, w->GetWidth() - me->GetX());
+		if (min_dist > dist)
+		{
+			min_dist = dist;
+			cur_type = ElementType::TBLOCK;
+		}
+	}
+	else if (abs(angle - M_PI) <= DBL_EPSILON)
 	{
 		//пересечение только с вертилкальными сторонами
 		dist = min(dist, me->GetX());
-		dist = min(dist, w->GetWidth() - me->GetX());
 		if (min_dist > dist)
 		{
 			min_dist = dist;
@@ -163,14 +189,21 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 		double b = y0 - k*x0;
 		double y = 0.0;
 		double x = (y - b) / k;
-		if (x >= -EPS && x <= w->GetWidth() + EPS && check(me, x, y, angle, step_angle))
+
+		double origin_vx = cos(angle), origin_vy = -sin(angle);
+
+		double vx = x - x0, vy = y - y0;
+		double cosv = (origin_vx*vx + origin_vy * vy) / sqrt(vx*vx + vy*vy);
+		if (x >= -EPS && x <= w->GetWidth() + EPS && /*check(me, x, y, angle, step_angle)*/ abs(cosv - 1.0) <= EPS)
 		{
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
 		//y=geth
 		y = w->GetHeight();
 		x = (y - b) / k;
-		if (x >= -EPS && x <= w->GetWidth() + EPS && check(me, x, y, angle, step_angle))
+		vx = x - x0, vy = y - y0;
+		cosv = (origin_vx*vx + origin_vy * vy) / sqrt(vx*vx + vy*vy);
+		if (x >= -EPS && x <= w->GetWidth() + EPS && abs(cosv - 1.0) <= EPS)
 		{
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
@@ -178,15 +211,18 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 		//x=0
 		x = 0.0;
 		y = k*x + b;
-		if (y >= -EPS && y <= w->GetHeight() + EPS && check(me, x, y, angle, step_angle))
+		vx = x - x0, vy = y - y0;
+		cosv = (origin_vx*vx + origin_vy * vy) / sqrt(vx*vx + vy*vy);
+		if (y >= -EPS && y <= w->GetHeight() + EPS && abs(cosv - 1.0) <= EPS)
 		{
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
 
-		//x=getw
 		x = w->GetWidth();
 		y = k*x + b;
-		if (y >= -EPS && y <= w->GetHeight() + EPS && check(me, x, y, angle, step_angle))
+		vx = x - x0, vy = y - y0;
+		cosv = (origin_vx*vx + origin_vy * vy) / sqrt(vx*vx + vy*vy);
+		if (y >= -EPS && y <= w->GetHeight() + EPS && abs(cosv - 1.0) <= EPS)
 		{
 			dist = min(dist, sqrt((x - x0)*(x - x0) + (y - y0)*(y - y0)));
 		}
@@ -203,7 +239,7 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 {
 	const double step_angle = M_PI*2.0 / eyes;
-	double angle = 0.0;
+	double angle = 0.001;
 
 	vector<pair<double, ElementType>> sensors(eyes, make_pair(DBL_MAX, ElementType::TCOUNT));
 	int eye = 0;

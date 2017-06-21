@@ -25,6 +25,7 @@ DWORD WINAPI DoMove(LPVOID lpParam) {
 }
 
 void World::Run() {
+	srand(time(NULL));
 	debugout << "Loading map" << endl;
 	LoadMap("maps\\map.txt");
 	debugout << "Map is loaded" << endl;
@@ -73,7 +74,8 @@ void World::Run() {
 					Food[i]->SetTaken();
 					if (Food[i]->GetDamage() != 0) Players[j]->SetHealth(max(Players[j]->GetHealth() - Food[i]->GetDamage(), 0));
 					//else Players[j]->SetFullness(min(Players[j]->GetFullness() + Food[i]->GetFullness(), 300));
-				else Players[j]->SetFullness(min(Players[j]->GetFullness() + Food[i]->GetFullness(), INT_MAX));
+					//else Players[j]->SetFullness(min(Players[j]->GetFullness() + Food[i]->GetFullness(), INT_MAX));
+				else Players[j]->SetFullness(min(Players[j]->GetFullness() + 1, INT_MAX));
 				}
 			}
 
@@ -195,7 +197,8 @@ void World::LoadPlayers() {
 				NewPlayer->SetCoords(Coords[i].first, Coords[i].second);
 				NewPlayer->SetR(20);
 				NewPlayer->SetWorld(this);
-				NewPlayer->SetSpeed(10);
+				//NewPlayer->SetSpeed(10);
+				NewPlayer->SetSpeed(20);
 				NewPlayer->SetAngle(M_PI*0.5);
 				//NewPlayer->SetFullness(300);
 				NewPlayer->SetFullness(1);
@@ -225,11 +228,11 @@ void World::UnloadPlayers() {
 
 
 void World::GenerateFood() {
-	int FoodCount = rand() % 20;
+	int FoodCount = rand() % 30;
 	for (int i = 0; i < FoodCount; ++i) {
 		Food *NewFood = new Food();
 		NewFood->SetCoords(rand() % 600 + 20, rand() % 425 + 20);
-		NewFood->SetR(10);
+		NewFood->SetR(15);
 		NewFood->SetLifetime(rand() % 200 + 10);
 		if (rand() % 20 == 1) NewFood->SetDamage(rand() % 500);
 		else NewFood->SetFullness(30);
@@ -300,7 +303,7 @@ void World::UpdateBonuses() {
 		}
 	}
 
-	if (WorldFood.size() <= 15) GenerateFood();
+	if (WorldFood.size() <= 30) GenerateFood();
 	//if (WorldWeapon.size() <= 2) GenerateWeapon();
 	//debugout << "End Update Bonuses" << endl;
 }
