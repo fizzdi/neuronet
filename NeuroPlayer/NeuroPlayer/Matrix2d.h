@@ -18,9 +18,9 @@ namespace NeuroNet
 	class Matrix2d
 	{
 	private:
+		double* _m;
 		int n, m;
 	public:
-		double* _m;
 		Matrix2d() { n = m = 0; _m = nullptr; };
 		~Matrix2d();
 		Matrix2d(const Matrix2d& rhs);
@@ -45,7 +45,6 @@ namespace NeuroNet
 		Matrix2d& operator-= (const double rhs);
 		Matrix2d operator- (const double rhs) const;
 
-		Matrix2d& operator*= (const double rhs);
 		Matrix2d operator* (const Matrix2d &rhs);
 		Matrix2d operator* (const double &rhs);
 

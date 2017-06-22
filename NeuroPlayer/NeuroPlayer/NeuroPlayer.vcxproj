@@ -18,6 +18,24 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Bonus.h" />
+    <ClInclude Include="DirectXRender.h" />
+    <ClInclude Include="Element.h" />
+    <ClInclude Include="ElmanNetwork.h" />
+    <ClInclude Include="Layer.h" />
+    <ClInclude Include="Matrix2d.h" />
+    <ClInclude Include="NeuralNetwork.h" />
+    <ClInclude Include="Unit.h" />
+    <ClInclude Include="World.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ElmanNetwork.cpp" />
+    <ClCompile Include="Layer.cpp" />
+    <ClCompile Include="Matrix2d.cpp" />
+    <ClCompile Include="NeuralNetwork.cpp" />
+    <ClCompile Include="Source.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0270394A-6532-40AA-AD8F-3FF30DAE6019}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -151,18 +169,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="Source.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Bonus.h" />
-    <ClInclude Include="DirectXRender.h" />
-    <ClInclude Include="Element.h" />
-    <ClInclude Include="MyPlayer.h" />
-    <ClInclude Include="Player.h" />
-    <ClInclude Include="Unit.h" />
-    <ClInclude Include="World.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -7,7 +7,6 @@
 #include <ctime>
 #include <climits>
 #include <omp.h>
-#include <random>
 #include <memory>
 #include <deque>
 #include "Matrix2d.h"
@@ -16,8 +15,6 @@
 using namespace std;
 
 ofstream debug("neurodebug.txt");
-std::mt19937 eng;
-std::uniform_int_distribution<> dist(1, 50000);
 
 const double ALPHA = 2.0;
 const double GAMMA = 0.99;
@@ -79,7 +76,6 @@ void MyPlayer::Init()
 	{
 		nets[i] = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
 	}
-	//net.InitFill(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
 }
 
 bool check(Element *player, double x, double y, double r, double angle, double step_angle) 
@@ -298,8 +294,8 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 
 }
 NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT);
+NeuroNet::Matrix2d last_inputs;
 
-int lasttest = -1;
 int tick = -1;
 void MyPlayer::Move()
 {
@@ -307,29 +303,35 @@ void MyPlayer::Move()
 
 	/////////////////////////////////////////////////////////////////////
 	///////////////////////// InitFill input vector /////////////////////////
-	inputs.Fill(-1.0);
+	last_inputs = inputs;
+	inputs.Fill(0.0);
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
+	//debug << inputs << endl;
 	vr.at(0, 0) = GetFullness();
 	int action = -1;
-	int rnd = dist(eng);
+	int rnd = NeuroNet::myrand();
 
 	if (!FirstStep)
 	{
 		int test = TrainingSet.size();
-		nets[lastAction].AddTest(TrainingSet, vr);
+		nets[lastAction].AddTest(TrainingSet, last_inputs, vr);
 		if (tick % TRAIN_PERIOD == 0)
 		{
 			int Epoch = TRAIN_EPOCH;
+			debug << "LA " << lastAction << endl;
 			while (Epoch--)
 			{
-				if (nets[lastAction].RunTrainingSetOffline(TrainingSet) < TRAIN_EPS)
+				double error;
+				if ((error = nets[lastAction].RMSTraining(TrainingSet)) < TRAIN_EPS)
+					//if (nets[lastAction].RunTrainingSetOffline(TrainingSet) < TRAIN_EPS)
 					break;
+				debug << "tick " << tick  << " ideal " << vr.at(0,0) << " error: " << error << endl;
 			}
 		}
 	}
 
-	if ((dist(eng) % 17) < 6)
+	if (tick % RANDOM_ACTION_PERIOD == 0)
 	{
 		Q = vr.at(0, 0);
 		action = rnd % Actions::COUNT;
@@ -342,7 +344,7 @@ void MyPlayer::Move()
 		{
 			nets[i].Run(inputs);
 			double curQ = nets[i].GetOut().sum();
-
+			debug << curQ << endl;
 			if (Q < curQ)
 			{
 				Q = curQ;
@@ -350,6 +352,7 @@ void MyPlayer::Move()
 			}
 		}
 	}
+	debug <<"SELECT " << Q << " i " << action << endl;
 
 	DoAction(this, (Actions)action);
 	FirstStep = false;

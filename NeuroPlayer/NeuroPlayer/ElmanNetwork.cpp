@@ -9,10 +9,10 @@ ElmanNetwork::ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFT
 	_layers.emplace_back(Layer(InputCount + NeuronCount, 0, LINE));
 	_layers.emplace_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction));
 	_layers.back().NguenWidrow(-2, 2, -1, 1);
-	/*_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
+	_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
 	_layers.back().NguenWidrow(-2, 2, -1, 1);
 	_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
-	_layers.back().NguenWidrow(-2, 2, -1, 1);*/
+	_layers.back().NguenWidrow(-2, 2, -1, 1);
 	_layers.emplace_back(Layer(OutputCount, NeuronCount, LINE));
 	_countlayers = _layers.size();
 

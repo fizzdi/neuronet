@@ -18,8 +18,8 @@ const int RANDOM_ACTION_PERIOD = 5;
 
 //RMS config
 const double RMS_GAMMA = 0.95;
-const double RMS_LEARNRATE = 1e-3;
-const double RMS_EPSILON = 1e-2;
+const double RMS_LEARNRATE = 0.001;
+const double RMS_EPSILON = 1e-8;
 
 namespace NeuroNet
 {
@@ -27,17 +27,17 @@ namespace NeuroNet
 	{
 	protected:
 		int _countlayers;
+		std::vector<Layer> _layers;
 		virtual void Run();
 	public:
-		std::vector<Layer> _layers;
 		std::vector<Matrix2d> eligibility;
 
 		NeuralNetwork() {};
 		NeuralNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
 		void Run(const std::vector<double>& input);
 		void Run(Matrix2d &input);
-		void AddTest(std::deque<Problem> &TrainingSet, const std::vector<double> &input, const std::vector<double> &ideal) const;
-		void AddTest(std::deque<Problem> &TrainingSet, const Matrix2d& input, const Matrix2d& ideal) const;
+		void AddTest(std::deque<Problem> &TrainingSet, const std::vector<double>& ideal) const;
+		void AddTest(std::deque<Problem> &TrainingSet, Matrix2d& ideal) const;
 		double RunTrainingSetOffline(std::deque<Problem> &TrainingSet, bool print = false);
 		double CalculateError(Problem& test, bool print = false);
 		void PrintProblemResult(Problem& test);

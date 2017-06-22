@@ -62,7 +62,7 @@ Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction)
 	Bias = Matrix2d(1, neuronCount);
 	BiasCorrectVal = Matrix2d(1, neuronCount);
 	RMS = Matrix2d(neuronCount, prevNeuronCount);
-	RMSBias = Matrix2d(1, neuronCount);
+	RMSBias = Matrix2d(1, neuronCount); 
 	RMSN = Matrix2d(neuronCount, prevNeuronCount);
 	RMSNBias = Matrix2d(1, neuronCount);
 

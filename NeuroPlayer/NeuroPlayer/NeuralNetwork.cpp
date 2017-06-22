@@ -12,9 +12,9 @@ NeuralNetwork::NeuralNetwork(int InputCount, int OutputCount, int NeuronCount, A
 	/*_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
 	_layers.back().NguenWidrow(-2, 2, -1, 1);
 	_layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
-	_layers.back().NguenWidrow(-2, 2, -1, 1);
+	_layers.back().NguenWidrow(-2, 2, -1, 1);*/
 
-	*/
+
 	_layers.emplace_back(Layer(OutputCount, NeuronCount, LINE));
 	//_layers.back().NguenWidrow(-1, 1, -1, 1);
 	_countlayers = _layers.size();
@@ -209,10 +209,10 @@ double NeuroNet::NeuralNetwork::RMSTraining(std::deque<Problem> &TrainingSet)
 		_layers[i].DeltaSum.Fill(0.0);
 	}
 
-	for each (Problem test in TrainingSet)
+	for (int t = 0; t < TrainingSet.size(); ++t)
 	{
-		Run(test.inputs);
-		CalcGradDelta(test.outputs);
+		Run(TrainingSet[t].inputs);
+		CalcGradDelta(TrainingSet[t].outputs);
 		for (int i = 1; i < _countlayers; ++i)
 		{
 			_layers[i].GradSum += _layers[i].Grad;
@@ -222,18 +222,18 @@ double NeuroNet::NeuralNetwork::RMSTraining(std::deque<Problem> &TrainingSet)
 	for (int i = 1; i < _countlayers; ++i)
 	{
 		//_layers[i].RMS.Fill(0.0);
-		_layers[i].RMS *= RMS_GAMMA;
-		_layers[i].RMS += _layers[i].GradSum.multiplication(_layers[i].GradSum) * (1.0 - RMS_GAMMA);
-		_layers[i].RMSBias *= RMS_GAMMA;
-		_layers[i].RMSBias += _layers[i].DeltaSum.multiplication(_layers[i].DeltaSum) * (1.0 - RMS_GAMMA);
-
-		_layers[i].RMSN *= RMS_GAMMA;
-		_layers[i].RMSN += _layers[i].GradSum * (1.0 - RMS_GAMMA);
-		_layers[i].RMSNBias *= RMS_GAMMA;
-		_layers[i].RMSNBias += _layers[i].DeltaSum * (1.0 - RMS_GAMMA);
+		_layers[i].RMS = _layers[i].RMS * RMS_GAMMA + _layers[i].GradSum.multiplication(_layers[i].GradSum) * (1.0 - RMS_GAMMA);
+		_layers[i].RMSBias = _layers[i].RMSBias * RMS_GAMMA + _layers[i].DeltaSum.multiplication(_layers[i].DeltaSum) * (1.0 - RMS_GAMMA);
+		_layers[i].RMSN = _layers[i].RMSN * RMS_GAMMA + _layers[i].GradSum * (1.0 - RMS_GAMMA);
+		_layers[i].RMSNBias = _layers[i].RMSNBias * RMS_GAMMA + _layers[i].DeltaSum * (1.0 - RMS_GAMMA);
 	}
 
 	RMSPropagation();
+	for (int i = 0; i < _countlayers; ++i)
+	{
+		_layers[i].LastGradSum = _layers[i].GradSum;
+		_layers[i].LastDeltaSum = _layers[i].DeltaSum;
+	}
 
 	double error = 0.0;
 	for each (Problem test in TrainingSet)
@@ -250,8 +250,6 @@ void NeuroNet::NeuralNetwork::RMSPropagation()
 	{
 		_layers[i].Weights -= (RMS_LEARNRATE / sqrt(_layers[i].RMS - _layers[i].RMSN.multiplication(_layers[i].RMSN) + RMS_EPSILON)).multiplication(_layers[i].GradSum);
 		_layers[i].Bias -= (RMS_LEARNRATE / sqrt(_layers[i].RMSBias - _layers[i].RMSNBias.multiplication(_layers[i].RMSNBias) + RMS_EPSILON)).multiplication(_layers[i].DeltaSum);
-		//_layers[i].Weights -= (RMS_LEARNRATE / sqrt(_layers[i].RMS - _layers[i].RMSN.multiplication(_layers[i].RMSN) + RMS_EPSILON)).multiplication(_layers[i].GradSum);
-		//_layers[i].Bias -= (RMS_LEARNRATE / sqrt(_layers[i].RMSBias - _layers[i].RMSNBias.multiplication(_layers[i].RMSNBias) + RMS_EPSILON)).multiplication(_layers[i].DeltaSum);
 	}
 }
 
@@ -344,21 +342,21 @@ void NeuralNetwork::Run(Matrix2d& input)
 
 	Run();
 }
-void NeuralNetwork::AddTest(std::deque<Problem> &TrainingSet, const std::vector<double> &input, const std::vector<double> &ideal) const
+void NeuralNetwork::AddTest(std::deque<Problem> &TrainingSet, const std::vector<double> &ideal) const
 {
 	if (TrainingSet.size() + 1 == TEST_COUNT)
 		TrainingSet.pop_front();
 	auto pr = Problem();
-	pr.inputs = input;
+	pr.inputs = _layers[0].States;
 	pr.outputs = ideal;
 	TrainingSet.emplace_back(pr);
 }
-void NeuralNetwork::AddTest(std::deque<Problem> &TrainingSet, const Matrix2d& input, const Matrix2d& ideal) const
+void NeuralNetwork::AddTest(std::deque<Problem> &TrainingSet, Matrix2d& ideal) const
 {
 	if (TrainingSet.size() + 1 == TEST_COUNT)
 		TrainingSet.pop_front();
 	auto pr = Problem();
-	pr.inputs = input;
+	pr.inputs = _layers[0].States;
 	pr.outputs = ideal;
 	TrainingSet.emplace_back(pr);
 }

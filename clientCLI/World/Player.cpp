@@ -73,7 +73,8 @@ void Player::MoveTo(int ToX, int ToY) {
 	}
 
 	if (ToX < 0 || ToY < 0 || ToX > GetWorld()->GetWidth() || ToY > GetWorld()->GetHeight()) return;
-	if (GetX() == ToX && GetY() == ToY) return;
+	if (GetX() == ToX && GetY() == ToY)
+		return;
 	//Angle = 0.0;
 	double AngleTo = GetAngleTo(ToX, ToY);
 	Rotate(AngleTo);

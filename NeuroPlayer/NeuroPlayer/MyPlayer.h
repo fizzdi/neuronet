@@ -1,3 +1,5 @@
+#ifndef _MY_PLAYER
+#define _MY_PLAYER
 #pragma once
 
 #include "Player.h"
@@ -11,3 +13,5 @@ public:
 };
 
 extern "C" __declspec (dllexport) MyPlayer* GetMyPlayer();
+//MyPlayer* GetMyPlayer();
+#endif

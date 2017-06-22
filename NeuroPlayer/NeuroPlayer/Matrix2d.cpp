@@ -149,14 +149,6 @@ Matrix2d Matrix2d::operator-(const double rhs) const
 	return std::move(res += -rhs);
 }
 
-Matrix2d & NeuroNet::Matrix2d::operator*=(const double rhs)
-{
-	for (int i = 0; i < n; ++i)
-		for (int j = 0; j < m; ++j)
-			at(i, j) *= rhs;
-	return *this;
-}
-
 Matrix2d Matrix2d::operator*(const Matrix2d & rhs)
 {
 	if (GetHorizontalSize() != rhs.GetVerticalSize())

@@ -232,7 +232,7 @@ void World::GenerateFood() {
 	for (int i = 0; i < FoodCount; ++i) {
 		Food *NewFood = new Food();
 		NewFood->SetCoords(rand() % 600 + 20, rand() % 425 + 20);
-		NewFood->SetR(15);
+		NewFood->SetR(10);
 		NewFood->SetLifetime(rand() % 200 + 10);
 		if (rand() % 20 == 1) NewFood->SetDamage(rand() % 500);
 		else NewFood->SetFullness(30);
