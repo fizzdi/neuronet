@@ -9,6 +9,12 @@ using namespace std;
 
 void Player::Render(LPDIRECT3DDEVICE9 d3ddev) {
 	RenderCircle(d3ddev, GetX(), GetY(), GetR(), Color);
+	double ang = M_PI / 100.0;
+	for (int i = 0; i < 8; ++i) {
+		int X2 = GetX() + 500 *cos(ang), Y2 = GetY() - 500 *sin(ang);
+		RenderLine(d3ddev, GetX(), GetY(), X2, Y2);
+		ang += 2.0 * M_PI / 8.0;
+	}
 }
 
 void Player::RenderFull(LPDIRECT3DDEVICE9 d3ddev) {

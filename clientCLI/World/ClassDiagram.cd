@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" GroupingSetting="Access" MembersFormat="NameAndType">
+  <Class Name="Bonus">
+    <Position X="4" Y="5.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAACAAAgAAAQAAASAAAQAEgAAAAEQAVAAAAAAAAQ=</HashCode>
+      <FileName>Bonus.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Food">
+    <Position X="1.5" Y="10.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAACAAAgAACAAAAAAABAAAgAAgAA=</HashCode>
+      <FileName>Bonus.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Weapon">
+    <Position X="5.25" Y="10.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AgAAAAAAAAAAAAAAACCAABIBAAEAAAgAABAAAAAAAAA=</HashCode>
+      <FileName>Bonus.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Knife">
+    <Position X="6.75" Y="14.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAACAAABAAAAAAAAAABAAAAAAAAA=</HashCode>
+      <FileName>Bonus.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Bow">
+    <Position X="4" Y="14.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAACAACAAAAAAAIAIAAAABAAAAAAAAA=</HashCode>
+      <FileName>Bonus.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Element">
+    <Position X="9.75" Y="1" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAQBAiIAAAAAAAAAAAAYBABAAAAYQA=</HashCode>
+      <FileName>Element.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Player">
+    <Position X="9.25" Y="5.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>wCAGSUAEgIIAAACAAECAARxBECEKBAiAAFgD02AAhBQ=</HashCode>
+      <FileName>Player.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Unit">
+    <Position X="15.5" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAIAAAAAAAAAAAAAEQAQAAAAAAAAA=</HashCode>
+      <FileName>Unit.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Block">
+    <Position X="12.75" Y="8.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAAAAAAAAAACAAAAAiAAAAAAAABAAAAAAAAA=</HashCode>
+      <FileName>Unit.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Trap">
+    <Position X="15.25" Y="8.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAADAEAhAAABAEACAAAAAAAAAAAAgABAAAAAAAAA=</HashCode>
+      <FileName>Unit.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Cornucopia">
+    <Position X="17.75" Y="8.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AgAAAAgAAAAAAAAAAESCAEQAAAAABAAAQBgAAAAAAAA=</HashCode>
+      <FileName>Unit.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="World">
+    <Position X="1" Y="1" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>ACIEBCAIBFAACBACAICIAGFIAgAiAAIAABAAAEgEAAY=</HashCode>
+      <FileName>World.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

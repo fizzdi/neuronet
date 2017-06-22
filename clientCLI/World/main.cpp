@@ -64,7 +64,7 @@ DWORD WINAPI ThreadProc(LPVOID lpParam)
 		L"CodeGameChallengeClass", pString,
 		WS_VISIBLE | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		640, 480, NULL, NULL, inj_hModule, NULL
+		655, 500, NULL, NULL, inj_hModule, NULL
 	);
 	hWnd = hwnd;
 	ShowWindow(hwnd, SW_SHOWNORMAL);

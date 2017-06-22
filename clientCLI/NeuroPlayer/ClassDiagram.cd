@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="MyPlayer" Collapsed="true">
+    <Position X="5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAA=</HashCode>
+      <FileName>MyPlayer.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="NeuroNet::ElmanNetwork" Collapsed="true">
+    <Position X="3.25" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAgggAAAEAgABAAABgAAAEAAAAAAAEgJAAAAAEAI=</HashCode>
+      <FileName>ElmanNetwork.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="NeuroNet::Layer" Collapsed="true">
+    <Position X="5" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>YAAIAgQAI5AAAACgAIABABAAAACAEQAEgECABAAAAAA=</HashCode>
+      <FileName>Layer.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="NeuroNet::Matrix2d" Collapsed="true">
+    <Position X="3.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAARAIQQQCAAAAAAAAAAQAAIAAACAQAkgAgAAAAAAA=</HashCode>
+      <FileName>Matrix2d.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="NeuroNet::Problem" Collapsed="true">
+    <Position X="3.25" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAIAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAQAAAA=</HashCode>
+      <FileName>Matrix2d.h</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Enum Name="Actions" Collapsed="true">
+    <Position X="3.25" Y="4.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAIAAAAAAAAAAAAAAABAAAEAAAAAAAIAAAAAAAAA=</HashCode>
+      <FileName>MyPlayer.cpp</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="ElementType" Collapsed="true">
+    <Position X="3.25" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAIAAAAAAAAAAAgEAAAAAAAAAAAAABAAAAAAAAA=</HashCode>
+      <FileName>MyPlayer.cpp</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="NeuroNet::AFType" Collapsed="true">
+    <Position X="5" Y="4.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAEAAAgAAAAAAAACAAA=</HashCode>
+      <FileName>Layer.h</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

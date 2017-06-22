@@ -198,7 +198,7 @@ void World::LoadPlayers() {
 				NewPlayer->SetR(20);
 				NewPlayer->SetWorld(this);
 				//NewPlayer->SetSpeed(10);
-				NewPlayer->SetSpeed(20);
+				NewPlayer->SetSpeed(30);
 				NewPlayer->SetAngle(M_PI*0.5);
 				//NewPlayer->SetFullness(300);
 				NewPlayer->SetFullness(1);

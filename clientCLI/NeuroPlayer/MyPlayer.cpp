@@ -239,7 +239,7 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 {
 	const double step_angle = M_PI*2.0 / eyes;
-	double angle = 0.001;
+	double angle = M_PI/100;
 
 	vector<pair<double, ElementType>> sensors(eyes, make_pair(DBL_MAX, ElementType::TCOUNT));
 	int eye = 0;
@@ -329,7 +329,7 @@ void MyPlayer::Move()
 		}
 	}
 
-	if ((dist(eng) % 17) < 3)
+	if ((dist(eng) % 17) < 6)
 	{
 		Q = vr.at(0, 0);
 		action = rnd % Actions::COUNT;
