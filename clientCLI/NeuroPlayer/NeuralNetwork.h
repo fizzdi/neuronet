@@ -8,10 +8,10 @@
 //Neural config
 const int SENSOR_COUNT = 8;
 const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
-const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT*1.5;
+const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT * 3;
 const int OUTPUT_NEURON_COUNT = 1;
 const int TEST_COUNT = 50;
-const int TRAIN_EPOCH = 100;
+const int TRAIN_EPOCH = 30;
 const int TRAIN_PERIOD = 5;
 const double TRAIN_EPS = 1e-3;
 const int RANDOM_ACTION_PERIOD = 5;
@@ -29,7 +29,7 @@ namespace NeuroNet
 		int _countlayers;
 		virtual void Run();
 	public:
-		std::vector<Layer> _layers;
+		std::vector<Layer> Layers;
 		std::vector<Matrix2d> eligibility;
 
 		NeuralNetwork() {};

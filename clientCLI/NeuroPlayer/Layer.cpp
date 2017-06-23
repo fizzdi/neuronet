@@ -1,4 +1,6 @@
 #include "Layer.h"
+#include <string>
+
 
 using namespace NeuroNet;
 Matrix2d Layer::sigm_function(Matrix2d& x)
@@ -74,6 +76,7 @@ Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction)
 	LastGradSum.Fill(0.0);
 	BiasCorrectVal.InitRandom(-1.0, 1.0);
 	Bias.InitRandom(-1.0, 1.0);
+	States.Fill(0.0);
 	RMS.Fill(0.0);
 	RMSBias.Fill(0.0);
 	RMSN.Fill(0.0);

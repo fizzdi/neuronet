@@ -9,57 +9,57 @@ std::uniform_int_distribution<> rnd_gen = std::uniform_int_distribution<>(0, RAN
 
 Matrix2d::~Matrix2d()
 {
-	if (n != 0)
-		delete[](_m);
-	_m = nullptr;
+	if (N != 0)
+		delete[](matrix);
+	matrix = nullptr;
 }
 
 Matrix2d::Matrix2d(const Matrix2d & rhs)
 {
 	if (*this == rhs) return;
-	this->n = rhs.n;
-	this->m = rhs.m;
-	_m = new double[n*m];
-	memcpy_s(_m, n*m * sizeof(*_m), rhs._m, n*m * sizeof(*rhs._m));
+	this->N = rhs.N;
+	this->M = rhs.M;
+	matrix = new double[N*M];
+	memcpy_s(matrix, N*M * sizeof(*matrix), rhs.matrix, N*M * sizeof(*rhs.matrix));
 }
 
 Matrix2d::Matrix2d(int n, int m)
 {
-	this->n = n;
-	this->m = m;
-	_m = new double[n*m];
+	this->N = n;
+	this->M = m;
+	matrix = new double[n*m];
 }
 
 Matrix2d::Matrix2d(const std::vector<double>& rhs)
 {
-	this->n = 1;
-	this->m = rhs.size();
-	_m = new double[m];
-	memcpy_s(_m, n*m * sizeof(*_m), rhs.data(), n*m * sizeof(*rhs.data()));
+	this->N = 1;
+	this->M = rhs.size();
+	matrix = new double[M];
+	memcpy_s(matrix, N*M * sizeof(*matrix), rhs.data(), N*M * sizeof(*rhs.data()));
 }
 
 void Matrix2d::Fill(double val)
 {
-	for (int i = 0; i < n; ++i)
-		for (int j = 0; j < m; ++j)
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < M; ++j)
 			at(i, j) = val;
 }
 
 void Matrix2d::InitRandom(double minv, double maxv)
 {
-	for (int i = 0; i < n; ++i)
-		for (int j = 0; j < m; ++j)
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < M; ++j)
 			at(i, j) = getRand(minv, maxv);
 }
 
 int Matrix2d::GetHorizontalSize() const
 {
-	return m;
+	return M;
 }
 
 int Matrix2d::GetVerticalSize() const
 {
-	return n;
+	return N;
 }
 
 Matrix2d Matrix2d::operator!() const
@@ -88,12 +88,12 @@ Matrix2d& Matrix2d::operator+=(const Matrix2d & rhs)
 {
 	if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
 	{
-		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		//debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		throw std::logic_error("Wrong sizes in addition operation");
 	}
 
-	for (int i = 0; i < n; ++i)
-		for (int j = 0; j < m; ++j)
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < M; ++j)
 			at(i, j) += rhs.at(i, j);
 	return *this;
 }
@@ -106,8 +106,8 @@ Matrix2d Matrix2d::operator+(const Matrix2d & rhs) const
 
 Matrix2d& Matrix2d::operator+=(const double rhs)
 {
-	for (int i = 0; i < n; ++i)
-		for (int j = 0; j < m; ++j)
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < M; ++j)
 			at(i, j) += rhs;
 	return *this;
 }
@@ -122,12 +122,12 @@ Matrix2d& Matrix2d::operator-=(const Matrix2d & rhs)
 {
 	if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
 	{
-		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		//debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		throw std::logic_error("Wrong sizes in subtraction operation");
 	}
 
-	for (int i = 0; i < n; ++i)
-		for (int j = 0; j < m; ++j)
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < M; ++j)
 			at(i, j) -= rhs.at(i, j);
 	return *this;
 }
@@ -151,8 +151,8 @@ Matrix2d Matrix2d::operator-(const double rhs) const
 
 Matrix2d & NeuroNet::Matrix2d::operator*=(const double rhs)
 {
-	for (int i = 0; i < n; ++i)
-		for (int j = 0; j < m; ++j)
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < M; ++j)
 			at(i, j) *= rhs;
 	return *this;
 }
@@ -161,7 +161,7 @@ Matrix2d Matrix2d::operator*(const Matrix2d & rhs)
 {
 	if (GetHorizontalSize() != rhs.GetVerticalSize())
 	{
-		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		//debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		throw std::logic_error("Wrong sizes in multiplication operation");
 	}
 
@@ -192,14 +192,14 @@ Matrix2d Matrix2d::operator*(const double & rhs)
 
 Matrix2d& Matrix2d::operator=(const std::vector<std::vector<double>>& rhs)
 {
-	//if (_m != nullptr)
-	delete[](_m);
-	this->n = rhs.size();
-	this->m = n > 0 ? rhs[0].size() : 0;
-	_m = new double[n*m];
+	//if (matrix != nullptr)
+	delete[](matrix);
+	this->N = rhs.size();
+	this->M = N > 0 ? rhs[0].size() : 0;
+	matrix = new double[N*M];
 
 	for (int i = 0; i < (int)rhs.size(); ++i)
-		memcpy_s(_m + (i*m) * sizeof(*_m), m * sizeof(*_m), rhs.data(), m * sizeof(*rhs.data()));
+		memcpy_s(matrix + (i*M) * sizeof(*matrix), M * sizeof(*matrix), rhs.data(), M * sizeof(*rhs.data()));
 	//for (int j = 0; j < m; ++j)
 	//	at(i,j) = rhs[i][j];
 	return *this;
@@ -212,32 +212,32 @@ Matrix2d& Matrix2d::operator=(const Matrix2d & rhs)
 		return *this;
 	}
 
-	//if (_m != nullptr)
-	delete[](_m);
+	//if (matrix != nullptr)
+	delete[](matrix);
 
 
-	this->n = rhs.n;
-	this->m = rhs.m;
-	_m = new double[n*m];
+	this->N = rhs.N;
+	this->M = rhs.M;
+	matrix = new double[N*M];
 
-	memcpy_s(_m, n*m * sizeof(*_m), rhs._m, n*m * sizeof(*rhs._m));
+	memcpy_s(matrix, N*M * sizeof(*matrix), rhs.matrix, N*M * sizeof(*rhs.matrix));
 	return *this;
 }
 
 Matrix2d& Matrix2d::operator=(const std::vector<double>& rhs)
 {
-	//if (_m != nullptr)
-	delete[](_m);
-	this->n = 1;
-	this->m = rhs.size();
-	_m = new double[n*m];
-	memcpy_s(_m, n*m * sizeof(*_m), rhs.data(), n*m * sizeof(*rhs.data()));
+	//if (matrix != nullptr)
+	delete[](matrix);
+	this->N = 1;
+	this->M = rhs.size();
+	matrix = new double[N*M];
+	memcpy_s(matrix, N*M * sizeof(*matrix), rhs.data(), N*M * sizeof(*rhs.data()));
 	return *this;
 }
 
 bool Matrix2d::operator==(const Matrix2d & rhs)
 {
-	return n == rhs.n && m == rhs.m && _m == rhs._m;
+	return N == rhs.N && M == rhs.M && matrix == rhs.matrix;
 }
 
 Matrix2d Matrix2d::abs() const
@@ -255,13 +255,13 @@ Matrix2d Matrix2d::multiplication(const Matrix2d & rhs) const
 {
 	if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
 	{
-		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		//debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		throw std::logic_error("Wrong sizes in multiplication operation");
 	}
 
-	Matrix2d res(rhs.n, rhs.m);
-	for (int i = 0; i < rhs.n; ++i)
-		for (int j = 0; j < rhs.m; ++j)
+	Matrix2d res(rhs.N, rhs.M);
+	for (int i = 0; i < rhs.N; ++i)
+		for (int j = 0; j < rhs.M; ++j)
 			res.at(i, j) = this->at(i, j) * rhs.at(i, j);
 	return  std::move(res);
 }
@@ -269,20 +269,20 @@ Matrix2d Matrix2d::multiplication(const Matrix2d & rhs) const
 const double Matrix2d::sum() const
 {
 	double ans = 0;
-	for (int i = 0; i < n; ++i)
-		for (int j = 0; j < m; ++j)
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < M; ++j)
 			ans += at(i, j);
 	return ans;
 }
 
 double & Matrix2d::at(const int &i, const int &j)
 {
-	return _m[i*m + j];
+	return matrix[i*M + j];
 }
 
 double Matrix2d::at(const int& i, const int& j) const
 {
-	return _m[i*m + j];
+	return matrix[i*M + j];
 }
 
 double NeuroNet::getRand(double vmin, double vmax, bool integer)
@@ -299,18 +299,18 @@ int NeuroNet::myrand()
 
 Matrix2d NeuroNet::operator*(const double lhs, const Matrix2d& rhs)
 {
-	Matrix2d res(rhs.n, rhs.m);
-	for (int i = 0; i < rhs.n; ++i)
-		for (int j = 0; j < rhs.m; ++j)
+	Matrix2d res(rhs.N, rhs.M);
+	for (int i = 0; i < rhs.N; ++i)
+		for (int j = 0; j < rhs.M; ++j)
 			res.at(i, j) = lhs * rhs.at(i, j);
 	return  std::move(res);
 }
 
 Matrix2d NeuroNet::operator/(const double lhs, const Matrix2d & rhs)
 {
-	Matrix2d res(rhs.n, rhs.m);
-	for (int i = 0; i < rhs.n; ++i)
-		for (int j = 0; j < rhs.m; ++j)
+	Matrix2d res(rhs.N, rhs.M);
+	for (int i = 0; i < rhs.N; ++i)
+		for (int j = 0; j < rhs.M; ++j)
 			res.at(i, j) = lhs / rhs.at(i, j);
 	return std::move(res);
 }

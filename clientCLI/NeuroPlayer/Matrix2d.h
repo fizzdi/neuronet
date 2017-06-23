@@ -18,10 +18,10 @@ namespace NeuroNet
 	class Matrix2d
 	{
 	private:
-		int n, m;
+		int N, M;
 	public:
-		double* _m;
-		Matrix2d() { n = m = 0; _m = nullptr; };
+		double* matrix;
+		Matrix2d() { N = M = 0; matrix = nullptr; };
 		~Matrix2d();
 		Matrix2d(const Matrix2d& rhs);
 		Matrix2d(int n, int m);

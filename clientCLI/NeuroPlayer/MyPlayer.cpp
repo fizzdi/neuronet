@@ -68,13 +68,13 @@ vector<NeuroNet::ElmanNetwork> nets;
 //NeuroNet::ElmanNetwork net;
 void MyPlayer::Init()
 {
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	SetName(L"NeuroPlayer");
 
 	nets.resize(Actions::COUNT);
 	for (int i = 0; i < nets.size(); ++i)
 	{
-		nets[i] = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
+		nets[i] = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM);
 	}
 }
 
@@ -284,7 +284,7 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 		}
 		if (cur_type == TENEMY)
 			int y = 0;
-		inputs.at(0, eye) = min_dist;
+		inputs.at(0, eye) = min_dist / (640*480);
 		inputs.at(0, eye + 1) = cur_type;
 
 		eye += 2;
@@ -304,13 +304,12 @@ void MyPlayer::Move()
 	/////////////////////////////////////////////////////////////////////
 	///////////////////////// InitFill input vector /////////////////////////
 	last_inputs = inputs;
-	inputs.Fill(0.0);
+	//inputs.Fill(0.0);
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
-	//debug << inputs << endl;
 	vr.at(0, 0) = GetFullness();
-	int action = -1;
 	int rnd = NeuroNet::myrand();
+	int action = rnd%Actions::COUNT;
 
 	if (!FirstStep)
 	{
@@ -319,14 +318,14 @@ void MyPlayer::Move()
 		if (tick % TRAIN_PERIOD == 0)
 		{
 			int Epoch = TRAIN_EPOCH;
-			debug << "LA " << lastAction << endl;
+			////debug << "LA " << lastAction << std::endl;
 			while (Epoch--)
 			{
 				double error;
-				if ((error = nets[lastAction].RMSTraining(TrainingSet)) < TRAIN_EPS)
-					//if (nets[lastAction].RunTrainingSetOffline(TrainingSet) < TRAIN_EPS)
+				//if ((error = nets[lastAction].RMSTraining(TrainingSet)) < TRAIN_EPS)
+					if (nets[lastAction].RunTrainingSetOffline(TrainingSet) < TRAIN_EPS)
 					break;
-				debug << "tick " << tick  << " ideal " << vr.at(0,0) << " error: " << error << endl;
+				////debug << "tick " << tick  << " ideal " << vr.at(0,0) << " error: " << error << std::endl;
 			}
 		}
 	}
@@ -344,7 +343,7 @@ void MyPlayer::Move()
 		{
 			nets[i].Run(inputs);
 			double curQ = nets[i].GetOut().sum();
-			debug << curQ << endl;
+			////debug << curQ << std::endl;
 			if (Q < curQ)
 			{
 				Q = curQ;
@@ -352,19 +351,18 @@ void MyPlayer::Move()
 			}
 		}
 	}
-	debug <<"SELECT " << Q << " i " << action << endl;
+//	//debug <<"SELECT " << Q << " i " << action << std::endl;
 
 	DoAction(this, (Actions)action);
 	FirstStep = false;
 	lastAction = action;
-	lastQ = Q;
 	if (tick % 1000 == 0)
 	{
-		debug << endl << endl << "======================tick " << tick << "========================================================" << endl;
+		//debug << std::endl << std::endl << "======================tick " << tick << "========================================================" << std::endl;
 		for (int i = 0; i < Actions::COUNT; ++i)
 		{
 			nets[i].debuginfo(debug);
 		}
-		debug.flush();
+		//debug.flush();
 	}
 }
