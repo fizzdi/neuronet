@@ -1,6 +1,7 @@
 #include "ElmanNetwork.h"
 #include <algorithm>
 #include <string>
+#include <queue>
 
 using namespace NeuroNet;
 
@@ -8,6 +9,8 @@ ElmanNetwork::ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFT
 {
 	layers.clear();
 	context_neuron = NeuronCount;
+	inputNeuron = InputCount;
+	outputNeuron = OutputCount;
 	layers.emplace_back(Layer(InputCount + context_neuron, 0, LINE));
 	layers.emplace_back(Layer(NeuronCount, InputCount + context_neuron, HiddenLayerFunction));
 	layers.back().NguenWidrow(-2, 2, -1, 1);
@@ -22,15 +25,13 @@ ElmanNetwork::ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFT
 Matrix2d NeuroNet::ElmanNetwork::GetContext()
 {
 	Matrix2d res(1, context_neuron);
-	for (int i = 1; i <= context_neuron; ++i)
-		res.at(0, context_neuron - i) = layers[0].States.at(0, layers[0].States.GetHorizontalSize() - i);
+	res.copy(inputNeuron, 0, context_neuron, layers[0].Axons);
 	return std::move(res);
 }
 
 void NeuroNet::ElmanNetwork::SetContext(const Matrix2d & context)
 {
-	for (int i = 1; i <= context_neuron; ++i)
-		layers[0].States.at(0, layers[0].States.GetHorizontalSize() - i) = context.at(0, context_neuron - i);
+	layers[0].States.copy(0, inputNeuron, context_neuron, context);
 }
 
 double NeuroNet::ElmanNetwork::RMSTraining(training_set& TrainingSet)
@@ -42,17 +43,37 @@ double NeuroNet::ElmanNetwork::RMSTraining(training_set& TrainingSet)
 			layers[i].DeltaSum.Fill(0.0);
 		}
 
+		std::queue<int> tests;
 		Matrix2d Context = GetContext();
-		for (int t = 0; t < TEST_COUNT; ++t)
+		if (TrainingSet.size() < TEST_COUNT)
 		{
-			int test = myrand() % TrainingSet.size();
-			SetContext(Context);
-			Run(TrainingSet[test].inputs);
-			CalcGradDelta(TrainingSet[test].outputs);
-			for (int i = 1; i < countLayers; ++i)
+			for (int test = 0; test < TrainingSet.size(); ++test)
 			{
-				layers[i].GradSum += layers[i].Grad;
-				layers[i].DeltaSum += layers[i].Delta;
+				tests.push(test);
+				SetContext(Context);
+				Run(TrainingSet[test].inputs);
+				CalcGradDelta(TrainingSet[test].outputs);
+				for (int i = 1; i < countLayers; ++i)
+				{
+					layers[i].GradSum += layers[i].Grad;
+					layers[i].DeltaSum += layers[i].Delta;
+				}
+			}
+		}
+		else
+		{
+			for (int t = 0; t < TEST_COUNT; ++t)
+			{
+				int test = myrand() % TrainingSet.size();
+				tests.push(test);
+				SetContext(Context);
+				Run(TrainingSet[test].inputs);
+				CalcGradDelta(TrainingSet[test].outputs);
+				for (int i = 1; i < countLayers; ++i)
+				{
+					layers[i].GradSum += layers[i].Grad;
+					layers[i].DeltaSum += layers[i].Delta;
+				}
 			}
 		}
 
@@ -72,19 +93,20 @@ double NeuroNet::ElmanNetwork::RMSTraining(training_set& TrainingSet)
 
 		double normGrad = 0.0;
 		for (int i = 1; i < countLayers; ++i)
-			normGrad += sqrt(layers[i].GradSum * !layers[i].GradSum).sum();
-
-		if (normGrad < 1e-6)
+			normGrad += layers[i].GradSum.multiplication(layers[i].GradSum).sum();
+		normGrad = std::sqrt(normGrad);
+		if (normGrad < 1e-2)
 			return 0.0;
 
 		RMSPropagation();
 
 		double error = 0.0;
-		for each (Problem test in TrainingSet)
+		while (!tests.empty())
 		{
 			SetContext(Context);
-			Run(test.inputs);
-			error += CalculateError(test);
+			Run(TrainingSet[tests.front()].inputs);
+			error += CalculateError(TrainingSet[tests.front()]);
+			tests.pop();
 		}
 		SetContext(Context);
 		return error;

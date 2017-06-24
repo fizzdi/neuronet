@@ -201,7 +201,7 @@ Matrix2d& Matrix2d::operator=(const std::vector<std::vector<double>>& rhs)
 	matrix = new double[N*M];
 
 	for (int i = 0; i < (int)rhs.size(); ++i)
-		memcpy_s(matrix + (i*M) * sizeof(*matrix), M * sizeof(*matrix), rhs.data(), M * sizeof(*rhs.data()));
+		memcpy_s(matrix + i*M, M * sizeof(*matrix), rhs[i].data(), M * sizeof(*rhs.data()));
 	//for (int j = 0; j < m; ++j)
 	//	at(i,j) = rhs[i][j];
 	return *this;
@@ -275,6 +275,12 @@ const double Matrix2d::sum() const
 		for (int j = 0; j < M; ++j)
 			ans += at(i, j);
 	return ans;
+}
+
+void NeuroNet::Matrix2d::copy(int pos_source, int pos_dest, int len, const Matrix2d & source)
+{
+	int sz = len * sizeof(*matrix);
+	memcpy_s(matrix + pos_dest, sz, source.matrix + pos_source, sz);
 }
 
 double & Matrix2d::at(const int &i, const int &j)

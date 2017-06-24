@@ -1,6 +1,7 @@
 #include "NeuralNetwork.h"
 #include <algorithm>
 #include <string>
+#include <queue>
 using namespace NeuroNet;
 
 NeuralNetwork::NeuralNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
@@ -189,15 +190,34 @@ double NeuroNet::NeuralNetwork::RMSTraining(training_set &TrainingSet)
 		layers[i].DeltaSum.Fill(0.0);
 	}
 
-	for (int t = 0; t < TEST_COUNT; ++t)
+	std::queue<int> tests;
+	if (TrainingSet.size() < TEST_COUNT)
 	{
-		int test = myrand() % TrainingSet.size();
-		Run(TrainingSet[test].inputs);
-		CalcGradDelta(TrainingSet[test].outputs);
-		for (int i = 1; i < countLayers; ++i)
+		for (int test = 0; test < TrainingSet.size(); ++test)
 		{
-			layers[i].GradSum += layers[i].Grad;
-			layers[i].DeltaSum += layers[i].Delta;
+			tests.push(test);
+			Run(TrainingSet[test].inputs);
+			CalcGradDelta(TrainingSet[test].outputs);
+			for (int i = 1; i < countLayers; ++i)
+			{
+				layers[i].GradSum += layers[i].Grad;
+				layers[i].DeltaSum += layers[i].Delta;
+			}
+		}
+	}
+	else
+	{
+		for (int t = 0; t < TEST_COUNT; ++t)
+		{
+			int test = myrand() % TrainingSet.size();
+			tests.push(test);
+			Run(TrainingSet[test].inputs);
+			CalcGradDelta(TrainingSet[test].outputs);
+			for (int i = 1; i < countLayers; ++i)
+			{
+				layers[i].GradSum += layers[i].Grad;
+				layers[i].DeltaSum += layers[i].Delta;
+			}
 		}
 	}
 
@@ -225,10 +245,11 @@ double NeuroNet::NeuralNetwork::RMSTraining(training_set &TrainingSet)
 	RMSPropagation();
 
 	double error = 0.0;
-	for each (Problem test in TrainingSet)
+	while (!tests.empty())
 	{
-		Run(test.inputs);
-		error += CalculateError(test);
+		Run(TrainingSet[tests.front()].inputs);
+		error += CalculateError(TrainingSet[tests.front()]);
+		tests.pop();
 	}
 	return error;
 }
@@ -239,8 +260,6 @@ void NeuroNet::NeuralNetwork::RMSPropagation()
 	{
 		layers[i].Weights -= (RMS_LEARNRATE / sqrt(layers[i].RMS - layers[i].RMSN.multiplication(layers[i].RMSN) + RMS_EPSILON)).multiplication(layers[i].GradSum);
 		layers[i].Bias -= (RMS_LEARNRATE / sqrt(layers[i].RMSBias - layers[i].RMSNBias.multiplication(layers[i].RMSNBias) + RMS_EPSILON)).multiplication(layers[i].DeltaSum);
-		//layers[i].Weights -= (RMS_LEARNRATE / sqrt(layers[i].RMS - layers[i].RMSN.multiplication(layers[i].RMSN) + RMS_EPSILON)).multiplication(layers[i].GradSum);
-		//layers[i].Bias -= (RMS_LEARNRATE / sqrt(layers[i].RMSBias - layers[i].RMSNBias.multiplication(layers[i].RMSNBias) + RMS_EPSILON)).multiplication(layers[i].DeltaSum);
 	}
 }
 
@@ -302,8 +321,7 @@ Matrix2d NeuralNetwork::GetOut() const
 
 void NeuroNet::NeuralNetwork::SetInput(const Matrix2d & inputs)
 {
-	for (int i = 0; i < inputNeuron; ++i)
-		layers[0].States.at(0, i);
+	layers[0].States.copy(0, 0, inputNeuron, inputs);
 }
 
 
@@ -327,7 +345,6 @@ void NeuralNetwork::Run(const Matrix2d& input)
 	//init input layer
 	SetInput(input);
 	layers[0].CalculateAxons();
-
 	Run();
 }
 

@@ -62,6 +62,8 @@ namespace NeuroNet
 		Matrix2d multiplication(const Matrix2d &rhs) const;
 		const double sum() const;
 
+		void copy(int pos_source, int pos_dest, int len, const Matrix2d& source);
+
 		double& at(const int& i, const int& j);
 		//double& at(const int i, const int j);
 		double at(const int& i, const int& j) const;

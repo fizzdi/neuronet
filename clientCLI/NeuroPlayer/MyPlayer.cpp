@@ -72,7 +72,7 @@ bool check(Element *player, double x, double y, double r, double angle, double s
 	acos_val = (xse*xo + yse*yo) / sqrt(xo*xo + yo*yo);
 	double angleB = acos(acos_val);
 	if (angleB < 0.0)
-		angleB += M_PI; 
+		angleB += M_PI;
 
 	return angleA - step_angle <= DBL_EPSILON && angleB - step_angle <= DBL_EPSILON;
 }
@@ -254,17 +254,22 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 		}
 		if (cur_type == TENEMY)
 			int y = 0;
-		inputs.at(0, 3*eye) = min_dist / (640 * 480);
-		inputs.at(0, 3*eye + 1) = cur_type;
-		int val;
+
+		inputs.at(0, 2 * eye) = min_dist / 800;
+		inputs.at(0, 2 * eye + 1) = cur_type;
+
+		//inputs.at(0, 3 * eye) = min_dist;
+		/*inputs.at(0, 3 * eye) = min_dist / (640 * 480);
+		inputs.at(0, 3 * eye + 1) = cur_type;
+		/*int val = 0;
 		switch (cur_type)
 		{
-			case ElementType::TFOOD:
-				val = food_counter;
-			define:
-				val = 1;
+		case ElementType::TFOOD:
+			val = food_counter;
+		define:
+			val = 1;
 		}
-		inputs.at(0, 3 * eye + 2) = val;
+		inputs.at(0, 3 * eye + 2) = val;*/
 
 		eye++;
 		angle += step_angle;
@@ -282,7 +287,7 @@ void MyPlayer::Init()
 {
 	SetName(L"NeuroPlayer");
 	SetEyeCount(SENSOR_COUNT);
-	net = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM);
+	net = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
 }
 void MyPlayer::Move()
 {
@@ -296,12 +301,13 @@ void MyPlayer::Move()
 	int rnd = NeuroNet::myrand();
 	int action = rnd%Actions::COUNT;
 	double dist_on_wall = min(GetX(), min(GetY(), min(GetWorld()->GetHeight() - GetY(), GetWorld()->GetWidth() - GetX())));
-	double wallPenalty = -0.2 * exp(-dist_on_wall / 50.0);
+	double wallPenalty = +0.5 * exp(-dist_on_wall / 50.0);
 	double reward = this->GetFullness() - last_full + wallPenalty;
-	NeuroNet::Matrix2d Context = net.GetContext();
+	//debug << "rew " << reward << endl;
 	last_full = this->GetFullness();
-	if (tick < 12000 && !FirstStep)
+	if (!FirstStep)
 	{
+		NeuroNet::Matrix2d Context = net.GetContext();
 		net.Run(inputs);
 		NeuroNet::Matrix2d Q = net.GetOut();
 		double tmp = -DBL_MAX;
@@ -319,24 +325,26 @@ void MyPlayer::Move()
 		if (tick % TRAIN_PERIOD == 0)
 		{
 			int Epoch = TRAIN_EPOCH;
+				double error;
 			while (Epoch--)
 			{
-				double error;
 				if ((error = net.RMSTraining(TrainingSet)) < TRAIN_EPS)
 					break;
+			//debug << error << std::endl;
 			}
+			//debug << std::endl;
 		}
+		net.SetContext(Context);
 	}
 
 	NeuroNet::Matrix2d Q;
-	if (tick < 7000 && (rnd % 28) < 5)
+	if (tick < 5000 && (rnd % 28) < 5)
 	{
 		action = rnd % Actions::COUNT;
 		lastAction = action;
 	}
 	else
 	{
-		net.SetContext(Context);
 		net.Run(inputs);
 		Q = net.GetOut();
 		double tmp = -DBL_MAX;
@@ -354,7 +362,7 @@ void MyPlayer::Move()
 	FirstStep = false;
 	lastAction = action;
 	lastQ = Q;
-	if (tick > 0 && tick % 5000 == 0)
+	if (tick > 0 && tick % 3000 == 0)
 	{
 		debug << std::endl << std::endl << "========================================================" << tick << "========================================================" << std::endl;
 		net.PrintFullInfo(debug);

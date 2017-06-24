@@ -15,19 +15,19 @@ const int BLOCK_COUNT = 0;
 const int PLAYER_COUNT = 1;
 
 //Neural config
-const int SENSOR_COUNT = 8;
-const int INPUT_NEURON_COUNT = SENSOR_COUNT * 3;
-const int HIDDEN_NEURON_COUNT = 200;
+const int SENSOR_COUNT = 16;
+const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
+const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT*2;
 const int OUTPUT_NEURON_COUNT = 4;
-const int TEST_COUNT = 100;
+const int TEST_COUNT = 30;
 const int MAX_TEST_COUNT = 1000;
-const int TRAIN_EPOCH = 1;
+const int TRAIN_EPOCH = 20;
 const int TRAIN_PERIOD = 5;
 const double TRAIN_EPS = 1e-3;
 const int RANDOM_ACTION_PERIOD = 5;
 
 //RMS config
-const double RMS_GAMMA = 0.95;
+const double RMS_GAMMA = 0.9;
 const double RMS_LEARNRATE = 1e-3;
 const double RMS_EPSILON = 1e-2;
 
