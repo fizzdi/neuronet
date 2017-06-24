@@ -11,10 +11,13 @@ namespace NeuroNet
 	class ElmanNetwork : public NeuralNetwork
 	{
 	protected:
+		int context_neuron;
 		void Run();
 	public:
 		using NeuralNetwork::Run;
 		ElmanNetwork() {};
 		ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
+		Matrix2d GetContext();
+		void SetContext(const Matrix2d& context);
 	};
 }

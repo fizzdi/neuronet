@@ -9,8 +9,8 @@ NeuralNetwork::NeuralNetwork(int InputCount, int OutputCount, int NeuronCount, A
 	Layers.emplace_back(Layer(InputCount, 0, LINE));
 	Layers.emplace_back(Layer(NeuronCount, InputCount, HiddenLayerFunction));
 	Layers.back().NguenWidrow(-2, 2, -1, 1);
-	Layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
-	Layers.back().NguenWidrow(-2, 2, -1, 1);
+	/*Layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
+	Layers.back().NguenWidrow(-2, 2, -1, 1);*/
 	/*Layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
 	Layers.back().NguenWidrow(-2, 2, -1, 1);
 	*/
@@ -208,17 +208,20 @@ double NeuroNet::NeuralNetwork::RMSTraining(std::deque<Problem> &TrainingSet)
 		Layers[i].GradSum.Fill(0.0);
 		Layers[i].DeltaSum.Fill(0.0);
 	}
-	for each (Problem test in TrainingSet)
+
+	for (int t = 0; t < TEST_COUNT; ++t)
 	{
-		Run(test.inputs);
+		int test = myrand() % TrainingSet.size();
+		Run(TrainingSet[test].inputs);
 		//debug << "test.inputs: " << std::endl<< test.inputs << std::endl;
-		CalcGradDelta(test.outputs);
+		CalcGradDelta(TrainingSet[test].outputs);
 		for (int i = 1; i < _countlayers; ++i)
 		{
 			Layers[i].GradSum += Layers[i].Grad;
 			Layers[i].DeltaSum += Layers[i].Delta;
 		}
 	}
+
 	for (int i = 1; i < _countlayers; ++i)
 	{
 		//Layers[i].RMS.Fill(0.0);
@@ -337,7 +340,9 @@ void NeuralNetwork::MCQLCorrect()
 
 void NeuroNet::NeuralNetwork::debuginfo(std::ostream & debug) const
 {
-	//TODO add full parameters
+	//input neurons
+	//hiddens neurons
+	//outputs
 	for (int i = 1; i < _countlayers; ++i)
 	{
 		//debug << Layers[i].Weights << std::endl;
@@ -382,7 +387,7 @@ void NeuralNetwork::Run(Matrix2d& input)
 }
 void NeuralNetwork::AddTest(std::deque<Problem> &TrainingSet, const std::vector<double> &input, const std::vector<double> &ideal) const
 {
-	if (TrainingSet.size() + 1 == TEST_COUNT)
+	if (TrainingSet.size() + 1 == MAX_TEST_COUNT)
 		TrainingSet.pop_front();
 	auto pr = Problem();
 	pr.inputs = input;
@@ -391,7 +396,7 @@ void NeuralNetwork::AddTest(std::deque<Problem> &TrainingSet, const std::vector<
 }
 void NeuralNetwork::AddTest(std::deque<Problem> &TrainingSet, const Matrix2d& input, const Matrix2d& ideal) const
 {
-	if (TrainingSet.size() + 1 == TEST_COUNT)
+	if (TrainingSet.size() + 1 == MAX_TEST_COUNT)
 		TrainingSet.pop_front();
 	auto pr = Problem();
 	pr.inputs = input;

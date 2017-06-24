@@ -5,13 +5,24 @@
 #include <fstream>
 #include <deque>
 
+
+//World config
+const int PARAMS_COUNT = 3; //HEALTH, FULLNESS, ANGLE
+const int FOOD_COUNT = 100;
+const int POISON_COUNT = 0;
+const int TRAP_COUNT = 0;
+const int CORNUCOPIA_COUNT = 0;
+const int BLOCK_COUNT = 0;
+const int PLAYER_COUNT = 1;
+
 //Neural config
-const int SENSOR_COUNT = 8;
+const int SENSOR_COUNT = 16;
 const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
-const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT * 3;
-const int OUTPUT_NEURON_COUNT = 1;
-const int TEST_COUNT = 50;
-const int TRAIN_EPOCH = 30;
+const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT * 2;
+const int OUTPUT_NEURON_COUNT = 4;
+const int TEST_COUNT = 100;
+const int MAX_TEST_COUNT = 1000;
+const int TRAIN_EPOCH = 10;
 const int TRAIN_PERIOD = 5;
 const double TRAIN_EPS = 1e-3;
 const int RANDOM_ACTION_PERIOD = 5;

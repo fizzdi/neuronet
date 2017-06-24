@@ -6,8 +6,9 @@ using namespace NeuroNet;
 ElmanNetwork::ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)
 {
 	Layers.clear();
-	Layers.emplace_back(Layer(InputCount + NeuronCount, 0, LINE));
-	Layers.emplace_back(Layer(NeuronCount, InputCount + NeuronCount, HiddenLayerFunction));
+	context_neuron = NeuronCount;
+	Layers.emplace_back(Layer(InputCount + context_neuron, 0, LINE));
+	Layers.emplace_back(Layer(NeuronCount, InputCount + context_neuron, HiddenLayerFunction));
 	Layers.back().NguenWidrow(-2, 2, -1, 1);
 	Layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
 	Layers.back().NguenWidrow(-2, 2, -1, 1);
@@ -22,6 +23,20 @@ ElmanNetwork::ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFT
 		eligibility[i] = Matrix2d(Layers[i].Grad.GetVerticalSize(), Layers[i].Grad.GetHorizontalSize());
 		eligibility[i].Fill(0.0);
 	}
+}
+
+Matrix2d NeuroNet::ElmanNetwork::GetContext()
+{
+	Matrix2d res(1, context_neuron);
+	for (int i = 1; i <= context_neuron; ++i)
+		res.at(0, context_neuron - i) = Layers[0].States.at(0, Layers[0].States.GetHorizontalSize() - i);
+	return std::move(res);
+}
+
+void NeuroNet::ElmanNetwork::SetContext(const Matrix2d & context)
+{
+	for (int i = 1; i <= context_neuron; ++i)
+		Layers[0].States.at(0, Layers[0].States.GetHorizontalSize() - i) = context.at(0, context_neuron - i);
 }
 
 void ElmanNetwork::Run()

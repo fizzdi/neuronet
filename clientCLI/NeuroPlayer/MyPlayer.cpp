@@ -11,32 +11,25 @@
 #include <deque>
 #include "Matrix2d.h"
 #include "ElmanNetwork.h"
-
 using namespace std;
 
 ofstream debug("neurodebug.txt");
 
+enum Actions { FORWARD, BACKWARD, LEFTSTEP, RIGHTSTEP, COUNT };
+
 const double ALPHA = 2.0;
 const double GAMMA = 0.99;
 const double LAMBDA = 0.5;
-//double r;
-double Q;
-double lastQ = 0.0;
+
+//q learning
+const double QL_LEARN = 0.9;
+
 int lastAction = 0;
 
-//World config
-const int PARAMS_COUNT = 3; //HEALTH, FULLNESS, ANGLE
-const int FOOD_COUNT = 100;
-const int POISON_COUNT = 0;
-const int TRAP_COUNT = 0;
-const int CORNUCOPIA_COUNT = 0;
-const int BLOCK_COUNT = 0;
-const int PLAYER_COUNT = 1;
+
 
 deque<NeuroNet::Problem> TrainingSet;
 
-NeuroNet::Matrix2d vr(1, 1);
-enum Actions { FORWARD, BACKWARD, LEFTSTEP, RIGHTSTEP, COUNT };
 void DoAction(MyPlayer* me, Actions action)
 {
 	switch (action)
@@ -64,21 +57,15 @@ void DoAction(MyPlayer* me, Actions action)
 
 SYSTEMTIME st;
 bool FirstStep = true;
-vector<NeuroNet::ElmanNetwork> nets;
-//NeuroNet::ElmanNetwork net;
+NeuroNet::ElmanNetwork net;
 void MyPlayer::Init()
 {
-	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	SetName(L"NeuroPlayer");
 
-	nets.resize(Actions::COUNT);
-	for (int i = 0; i < nets.size(); ++i)
-	{
-		nets[i] = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM);
-	}
+	net = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM);
 }
 
-bool check(Element *player, double x, double y, double r, double angle, double step_angle) 
+bool check(Element *player, double x, double y, double r, double angle, double step_angle)
 {
 	double x0 = player->GetX(), y0 = player->GetY();
 	double x2 = x0 + 1.0 * cos(angle), y2 = y0 - 1.0*sin(angle);
@@ -234,8 +221,23 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 
 void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 {
+	/*inputs.at(0, 0) = me->GetX();
+	inputs.at(0, 1) = me->GetY();
+	int i = 1;
+	for each (auto cur in w->GetFood())
+	{
+		if (i == FOOD_COUNT)
+			break;
+
+		inputs.at(0, 2*i) = cur->GetX();
+		inputs.at(0, 2*i + 1) = cur->GetY();
+	}
+
+
+
+	return;*/
 	const double step_angle = M_PI*2.0 / eyes;
-	double angle = M_PI/100;
+	double angle = M_PI / 100;
 
 	vector<pair<double, ElementType>> sensors(eyes, make_pair(DBL_MAX, ElementType::TCOUNT));
 	int eye = 0;
@@ -284,7 +286,7 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 		}
 		if (cur_type == TENEMY)
 			int y = 0;
-		inputs.at(0, eye) = min_dist / (640*480);
+		inputs.at(0, eye) = min_dist / (640 * 480);
 		inputs.at(0, eye + 1) = cur_type;
 
 		eye += 2;
@@ -297,8 +299,12 @@ NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT);
 NeuroNet::Matrix2d last_inputs;
 
 int tick = -1;
+NeuroNet::Matrix2d lastQ;
+double last_full = 0.0;
 void MyPlayer::Move()
 {
+	//try use context in training!!! 
+
 	tick++;
 
 	/////////////////////////////////////////////////////////////////////
@@ -307,14 +313,28 @@ void MyPlayer::Move()
 	//inputs.Fill(0.0);
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
-	vr.at(0, 0) = GetFullness();
 	int rnd = NeuroNet::myrand();
 	int action = rnd%Actions::COUNT;
-
+	double reward = this->GetFullness() - last_full;
+	NeuroNet::Matrix2d Context = net.GetContext();
+	last_full = this->GetFullness();
 	if (!FirstStep)
 	{
-		int test = TrainingSet.size();
-		nets[lastAction].AddTest(TrainingSet, last_inputs, vr);
+		net.Run(inputs);
+		NeuroNet::Matrix2d Q = net.GetOut();
+		double tmp = -DBL_MAX;
+		for (int i = 0; i < Q.GetHorizontalSize(); ++i)
+		{
+			////debug << curQ << std::endl;
+			if (tmp < Q.at(0, i))
+			{
+				tmp = Q.at(0, i);
+				action = i;
+			}
+		}
+		Q.at(0, lastAction) = reward + QL_LEARN*tmp;
+		//debug << Q << std::endl;
+		net.AddTest(TrainingSet, last_inputs, Q);
 		if (tick % TRAIN_PERIOD == 0)
 		{
 			int Epoch = TRAIN_EPOCH;
@@ -322,47 +342,46 @@ void MyPlayer::Move()
 			while (Epoch--)
 			{
 				double error;
-				//if ((error = nets[lastAction].RMSTraining(TrainingSet)) < TRAIN_EPS)
-					if (nets[lastAction].RunTrainingSetOffline(TrainingSet) < TRAIN_EPS)
+				if ((error = net.RMSTraining(TrainingSet)) < TRAIN_EPS)
+					// (net.RunTrainingSetOffline(TrainingSet) < TRAIN_EPS)
 					break;
 				////debug << "tick " << tick  << " ideal " << vr.at(0,0) << " error: " << error << std::endl;
 			}
 		}
 	}
 
-	if (tick % RANDOM_ACTION_PERIOD == 0)
+	NeuroNet::Matrix2d Q;
+	if ((rnd % 28) < 5)
 	{
-		Q = vr.at(0, 0);
 		action = rnd % Actions::COUNT;
+		lastAction = action;
 	}
 	else
 	{
-
-		Q = -DBL_MAX;
-		for (int i = 0; i < nets.size(); ++i)
+		net.SetContext(Context);
+		net.Run(inputs);
+		Q = net.GetOut();
+		double tmp = -DBL_MAX;
+		for (int i = 0; i < Q.GetHorizontalSize(); ++i)
 		{
-			nets[i].Run(inputs);
-			double curQ = nets[i].GetOut().sum();
 			////debug << curQ << std::endl;
-			if (Q < curQ)
+			if (tmp < Q.at(0, i))
 			{
-				Q = curQ;
+				tmp = Q.at(0, i);
 				action = i;
 			}
 		}
 	}
-//	//debug <<"SELECT " << Q << " i " << action << std::endl;
+	//	//debug <<"SELECT " << Q << " i " << action << std::endl;
 
 	DoAction(this, (Actions)action);
 	FirstStep = false;
 	lastAction = action;
+	lastQ = Q;
 	if (tick % 1000 == 0)
 	{
-		//debug << std::endl << std::endl << "======================tick " << tick << "========================================================" << std::endl;
-		for (int i = 0; i < Actions::COUNT; ++i)
-		{
-			nets[i].debuginfo(debug);
-		}
-		//debug.flush();
+		debug << std::endl << std::endl << "======================tick " << tick << "========================================================" << std::endl;
+		net.debuginfo(debug);
+		debug.flush();
 	}
 }
