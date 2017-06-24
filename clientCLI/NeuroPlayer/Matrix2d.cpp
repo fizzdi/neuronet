@@ -88,7 +88,7 @@ Matrix2d& Matrix2d::operator+=(const Matrix2d & rhs)
 {
 	if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
 	{
-		////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		throw std::logic_error("Wrong sizes in addition operation");
 	}
 
@@ -122,7 +122,7 @@ Matrix2d& Matrix2d::operator-=(const Matrix2d & rhs)
 {
 	if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
 	{
-		////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		throw std::logic_error("Wrong sizes in subtraction operation");
 	}
 
@@ -161,7 +161,7 @@ Matrix2d Matrix2d::operator*(const Matrix2d & rhs)
 {
 	if (GetHorizontalSize() != rhs.GetVerticalSize())
 	{
-		////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		throw std::logic_error("Wrong sizes in multiplication operation");
 	}
 
@@ -177,7 +177,6 @@ Matrix2d Matrix2d::operator*(const Matrix2d & rhs)
 			for (int k = 0; k < nm; ++k)
 				res.at(i, j) += this->at(i, k) * rhs.at(k, j);
 		}
-	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 	return std::move(res);
 }
 
@@ -258,7 +257,7 @@ Matrix2d Matrix2d::multiplication(const Matrix2d & rhs) const
 {
 	if (GetHorizontalSize() != rhs.GetHorizontalSize() || GetVerticalSize() != rhs.GetVerticalSize())
 	{
-		////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		throw std::logic_error("Wrong sizes in multiplication operation");
 	}
 

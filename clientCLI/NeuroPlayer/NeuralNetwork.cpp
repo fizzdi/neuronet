@@ -203,15 +203,8 @@ double NeuroNet::NeuralNetwork::RMSTraining(training_set &TrainingSet)
 
 	for (int i = 1; i < countLayers; ++i)
 	{
-		//layers[i].RMS.Fill(0.0);
-	//	//debug << "RMS1: " << std::endl<<  layers[i].RMS << std::endl;
-		//debug.flush();
 		layers[i].RMS *= RMS_GAMMA;
-		//	//debug << "RMS2: " << std::endl << layers[i].RMS << std::endl;
-		//debug.flush();
 		layers[i].RMS += layers[i].GradSum.multiplication(layers[i].GradSum) * (1.0 - RMS_GAMMA);
-		//	//debug << "RMS3: " << std::endl << layers[i].RMS << std::endl << std::endl;
-		//debug.flush();
 		layers[i].RMSBias *= RMS_GAMMA;
 		layers[i].RMSBias += layers[i].DeltaSum.multiplication(layers[i].DeltaSum) * (1.0 - RMS_GAMMA);
 
@@ -269,28 +262,10 @@ void NeuralNetwork::CalcGradDelta(const Matrix2d &outputs)
 	}
 
 	layers.back().Delta = (layers.back().Axons - outputs).multiplication(layers.back().GetDiff());
-	////debug << "layers.back().Delta: " << std::endl << layers.back().Delta << std::endl;
-	////debug << "layers.back().Axons: " << std::endl << layers.back().Axons << std::endl;
-	////debug << "outputs: " << std::endl << outputs << std::endl;
-	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
-	//debug << "layers.back().GetDiff(): " << std::endl << layers.back().GetDiff() << std::endl;
-	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
-
-	//debug.flush();
-	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 	for (int i = countLayers - 2; i >= 0; --i)
-	{
-		////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 		layers[i].Delta = (layers[i + 1].Delta * layers[i + 1].Weights).multiplication(layers[i].GetDiff());
-		////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
-		//debug << "layers["<<i<<"].Delta: " << std::endl << layers[i].Delta << std::endl;
-		////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
-	}
 	for (int i = 1; i < countLayers; ++i)
-	{
 		layers[i].Grad = !layers[i].Delta * layers[i - 1].Axons;
-		//debug << "layers["<<i<<"].Grad: " << std::endl << layers[i].Grad << std::endl;
-	}
 }
 
 void NeuroNet::NeuralNetwork::PrintFullInfo(std::ostream & debug) const
@@ -334,14 +309,12 @@ void NeuroNet::NeuralNetwork::SetInput(const Matrix2d & inputs)
 
 void NeuralNetwork::Run()
 {
-	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 	//init hidden and output layers
 	for (int i = 1; i < countLayers; ++i)
 	{
 		layers[i].CalculateStates(layers[i - 1]);
 		layers[i].CalculateAxons();
 	}
-	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 }
 
 void NeuralNetwork::Run(const std::vector<double>& input)
