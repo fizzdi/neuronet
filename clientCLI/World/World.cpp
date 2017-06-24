@@ -174,7 +174,11 @@ void World::LoadPlayers() {
 	do
 	{
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
-		else PlayerFiles.push_back(wstring(ffd.cFileName));
+		wstring fileName = wstring(ffd.cFileName);
+		if (fileName.length() < 4) continue;
+		wstring extension = fileName.substr(fileName.length() - 3, 3);
+		if (extension != wstring(L"dll")) continue;
+		PlayerFiles.emplace_back(wstring(ffd.cFileName));
 	} while (FindNextFile(hFind, &ffd) != 0);
 
 	FindClose(hFind);

@@ -17,16 +17,10 @@ ofstream debug("neurodebug.txt");
 
 enum Actions { FORWARD, BACKWARD, LEFTSTEP, RIGHTSTEP, COUNT };
 
-const double ALPHA = 2.0;
-const double GAMMA = 0.99;
-const double LAMBDA = 0.5;
-
 //q learning
 const double QL_LEARN = 0.9;
 
 int lastAction = 0;
-
-
 
 deque<NeuroNet::Problem> TrainingSet;
 
@@ -55,13 +49,12 @@ void DoAction(MyPlayer* me, Actions action)
 	}
 }
 
-SYSTEMTIME st;
 bool FirstStep = true;
 NeuroNet::ElmanNetwork net;
 void MyPlayer::Init()
 {
 	SetName(L"NeuroPlayer");
-
+	SetEyeCount(SENSOR_COUNT);
 	net = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM);
 }
 
@@ -95,22 +88,18 @@ bool check(Element *player, double x, double y, double r, double angle, double s
 	return false;
 }
 
-
 bool check(Element *player, Element *elem, double angle, double step_angle)
 {
 	return check(player, elem->GetX(), elem->GetY(), elem->GetR(), angle, step_angle);
 }
 
-
 enum ElementType { TFOOD, TENEMY, TBLOCK, TCOUNT };
-string elty[] = { "FOOD", "ENEMY", "BLOCK", "COUNT" };
 
 pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, double step_angle)
 {
 	double x0 = me->GetX();
 	double y0 = me->GetY();
 	double k = -tan(angle);
-	double angleB;
 
 	//Y = 0, x = 0..getw
 	double dist = DBL_MAX;
@@ -304,6 +293,7 @@ double last_full = 0.0;
 void MyPlayer::Move()
 {
 	//try use context in training!!! 
+	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 
 	tick++;
 
@@ -318,6 +308,7 @@ void MyPlayer::Move()
 	double reward = this->GetFullness() - last_full;
 	NeuroNet::Matrix2d Context = net.GetContext();
 	last_full = this->GetFullness();
+	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 	if (!FirstStep)
 	{
 		net.Run(inputs);
@@ -325,7 +316,6 @@ void MyPlayer::Move()
 		double tmp = -DBL_MAX;
 		for (int i = 0; i < Q.GetHorizontalSize(); ++i)
 		{
-			////debug << curQ << std::endl;
 			if (tmp < Q.at(0, i))
 			{
 				tmp = Q.at(0, i);
@@ -333,19 +323,16 @@ void MyPlayer::Move()
 			}
 		}
 		Q.at(0, lastAction) = reward + QL_LEARN*tmp;
-		//debug << Q << std::endl;
-		net.AddTest(TrainingSet, last_inputs, Q);
+		net.SetContext(Context);
+		NeuroNet::AddTest(TrainingSet, last_inputs, Q);
 		if (tick % TRAIN_PERIOD == 0)
 		{
 			int Epoch = TRAIN_EPOCH;
-			////debug << "LA " << lastAction << std::endl;
 			while (Epoch--)
 			{
 				double error;
 				if ((error = net.RMSTraining(TrainingSet)) < TRAIN_EPS)
-					// (net.RunTrainingSetOffline(TrainingSet) < TRAIN_EPS)
 					break;
-				////debug << "tick " << tick  << " ideal " << vr.at(0,0) << " error: " << error << std::endl;
 			}
 		}
 	}
@@ -364,7 +351,6 @@ void MyPlayer::Move()
 		double tmp = -DBL_MAX;
 		for (int i = 0; i < Q.GetHorizontalSize(); ++i)
 		{
-			////debug << curQ << std::endl;
 			if (tmp < Q.at(0, i))
 			{
 				tmp = Q.at(0, i);
@@ -372,16 +358,16 @@ void MyPlayer::Move()
 			}
 		}
 	}
-	//	//debug <<"SELECT " << Q << " i " << action << std::endl;
 
 	DoAction(this, (Actions)action);
 	FirstStep = false;
 	lastAction = action;
 	lastQ = Q;
-	if (tick % 1000 == 0)
+	if (tick > 0 && tick % 5000 == 0)
 	{
-		debug << std::endl << std::endl << "======================tick " << tick << "========================================================" << std::endl;
-		net.debuginfo(debug);
+		////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+		//debug << std::endl << std::endl << "========================================================" << tick << "========================================================" << std::endl;
+		net.PrintFullInfo(debug);
 		debug.flush();
 	}
 }

@@ -86,7 +86,11 @@ Layer::Layer(int neuronCount, int prevNeuronCount, AFType activationFunction)
 //TODO add const operation
 void Layer::CalculateStates(Layer & prevLayer)
 {
+	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
+	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << " " << prevLayer.Axons.GetVerticalSize() << " " << prevLayer.Axons.GetHorizontalSize() << std::endl;
+	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << " " << Weights.GetVerticalSize() << " " << Weights.GetHorizontalSize() << std::endl;
 	States = prevLayer.Axons * !Weights + Bias;
+	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
 }
 
 void Layer::CalculateAxons()

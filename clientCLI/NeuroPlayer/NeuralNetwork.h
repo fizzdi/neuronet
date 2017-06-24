@@ -5,7 +5,6 @@
 #include <fstream>
 #include <deque>
 
-
 //World config
 const int PARAMS_COUNT = 3; //HEALTH, FULLNESS, ANGLE
 const int FOOD_COUNT = 100;
@@ -16,13 +15,13 @@ const int BLOCK_COUNT = 0;
 const int PLAYER_COUNT = 1;
 
 //Neural config
-const int SENSOR_COUNT = 16;
+const int SENSOR_COUNT = 32;
 const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
-const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT * 2;
+const int HIDDEN_NEURON_COUNT = 200;
 const int OUTPUT_NEURON_COUNT = 4;
 const int TEST_COUNT = 100;
 const int MAX_TEST_COUNT = 1000;
-const int TRAIN_EPOCH = 10;
+const int TRAIN_EPOCH = 1;
 const int TRAIN_PERIOD = 5;
 const double TRAIN_EPS = 1e-3;
 const int RANDOM_ACTION_PERIOD = 5;
@@ -34,35 +33,48 @@ const double RMS_EPSILON = 1e-2;
 
 namespace NeuroNet
 {
+	typedef std::deque<Problem> training_set;
+	void AddTest(training_set &TrainingSet, const std::vector<double> &input, const std::vector<double> &ideal);
+	void AddTest(training_set &TrainingSet, const Matrix2d& input, const Matrix2d& ideal);
+
 	class NeuralNetwork
 	{
 	protected:
-		int _countlayers;
+		int countLayers;
+		std::vector<Layer> layers;
+		int inputNeuron;
+		int outputNeuron;
+		
+		//Methods
 		virtual void Run();
 	public:
-		std::vector<Layer> Layers;
-		std::vector<Matrix2d> eligibility;
-
+		//Constructors
 		NeuralNetwork() {};
 		NeuralNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
+		
+		//Methods
 		void Run(const std::vector<double>& input);
-		void Run(Matrix2d &input);
-		void AddTest(std::deque<Problem> &TrainingSet, const std::vector<double> &input, const std::vector<double> &ideal) const;
-		void AddTest(std::deque<Problem> &TrainingSet, const Matrix2d& input, const Matrix2d& ideal) const;
-		double RunTrainingSetOffline(std::deque<Problem> &TrainingSet, bool print = false);
-		double CalculateError(Problem& test, bool print = false);
-		void PrintProblemResult(Problem& test);
+		void Run(const Matrix2d &input);
+
+		//Training
+		double RunTrainingSetOffline(training_set &TrainingSet);
 		void ResilientPropagation();
 		void ResilientPropagationOffline();
-		double RMSTraining(std::deque<Problem> &TrainingSet);
+		double RMSTraining(training_set &TrainingSet);
 		void RMSPropagation();
+
+		//Calc
+		double CalculateError(Problem& test, bool print = false);
 		void CalcGradDelta(const double output);
 		void CalcGradDelta(const std::vector<double>& output);
-		void CalcGradDelta(Matrix2d &output);
-		Matrix2d& GetOutputGrad();
-		void MCQLCorrect();
-		void debuginfo(std::ostream &debug) const;
+		void CalcGradDelta(const Matrix2d &output);
+
+		//Gets
+		void PrintFullInfo(std::ostream &debug) const;
 		Matrix2d GetOut() const;
 		friend std::ostream& operator<< (std::ostream &os, NeuralNetwork &net);
+
+		//Sets
+		void SetInput(const Matrix2d& inputs);
 	};
 }

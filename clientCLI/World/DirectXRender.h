@@ -19,7 +19,7 @@ void initD3D(HWND hWnd);
 
 void RenderCircle(LPDIRECT3DDEVICE9 d3ddev, int X, int Y, int R, D3DCOLOR Color);
 void DrawTextString(LPDIRECT3DDEVICE9 d3ddev, RECT *TextRect, D3DCOLOR Color, const wchar_t *Str);
-void RenderLine(LPDIRECT3DDEVICE9 d3ddev, int X1, int Y1, int X2, int Y2);
+void RenderLine(LPDIRECT3DDEVICE9 d3ddev, int X1, int Y1, int X2, int Y2, D3DCOLOR Color);
 void RenderTexture(LPDIRECT3DDEVICE9 d3ddev, int X, int Y, const wchar_t TexturePath[]);
 
 void cleanD3D(void);

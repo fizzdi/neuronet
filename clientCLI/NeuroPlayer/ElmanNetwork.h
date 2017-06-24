@@ -19,5 +19,6 @@ namespace NeuroNet
 		ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
 		Matrix2d GetContext();
 		void SetContext(const Matrix2d& context);
-	};
+		double RMSTraining(training_set &TrainingSet);
+	};		
 }

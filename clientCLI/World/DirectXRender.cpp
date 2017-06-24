@@ -52,12 +52,12 @@ void RenderCircle(LPDIRECT3DDEVICE9 d3ddev, int X, int Y, int R, D3DCOLOR Color)
 	d3ddev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, CIRCLE_RESOLUTION - 1, &verts, sizeof(VERTEX_2D_DIF));
 }
 
-void RenderLine(LPDIRECT3DDEVICE9 d3ddev, int X1, int Y1, int X2, int Y2) {
+void RenderLine(LPDIRECT3DDEVICE9 d3ddev, int X1, int Y1, int X2, int Y2, D3DCOLOR Color) {
 	LPD3DXLINE line;
 	D3DXCreateLine(d3ddev, &line);
 	D3DXVECTOR2 lines[] = { D3DXVECTOR2(float(X1), float(Y1)), D3DXVECTOR2(float(X2), float(Y2)) };
 	line->Begin();
-	line->Draw(lines, 2, 0xFFFFFFFF);
+	line->Draw(lines, 2, Color);
 	line->End();
 	line->Release();
 }

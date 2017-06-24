@@ -19,8 +19,8 @@ namespace NeuroNet
 	{
 	private:
 		int N, M;
-	public:
 		double* matrix;
+	public:
 		Matrix2d() { N = M = 0; matrix = nullptr; };
 		~Matrix2d();
 		Matrix2d(const Matrix2d& rhs);
