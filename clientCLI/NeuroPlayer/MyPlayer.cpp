@@ -11,6 +11,7 @@
 #include <deque>
 #include "Matrix2d.h"
 #include "ElmanNetwork.h"
+#include <queue>
 using namespace std;
 
 ofstream debug("neurodebug.txt");
@@ -19,6 +20,7 @@ enum Actions { FORWARD, BACKWARD, LEFTSTEP, RIGHTSTEP, COUNT };
 
 //q learning
 const double QL_LEARN = 0.9;
+const int COUNT_REWARD = 50;
 
 int lastAction = 0;
 
@@ -51,41 +53,28 @@ void DoAction(MyPlayer* me, Actions action)
 
 bool FirstStep = true;
 NeuroNet::ElmanNetwork net;
-void MyPlayer::Init()
-{
-	SetName(L"NeuroPlayer");
-	SetEyeCount(SENSOR_COUNT);
-	net = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM);
-}
 
 bool check(Element *player, double x, double y, double r, double angle, double step_angle)
 {
-	double x0 = player->GetX(), y0 = player->GetY();
-	double x2 = x0 + 1.0 * cos(angle), y2 = y0 - 1.0*sin(angle);
-	double k = (y2 - y0) / (x2 - x0), b = -x0*k + y0;
-	if (abs(x2 - x0) <= EPS) {
-		double Ds = r*r - (y0 - y)*(y0 - y);
-		if (Ds >= 0.0) {
-			double cross_x1 = sqrt(Ds) + x, cross_y1 = y0;
-			double cosv = ((cross_x1 - x0)*(x2 - x0) + (cross_y1 - y0)*(y2 - y0)) / (sqrt((cross_x1 - x0)*(cross_x1 - x0) + (cross_y1 - y0)*(cross_y1 - y0)));
-			if (cosv >= -EPS) {
-				return true;
-			}
-			return false;
-		}
-	}
-	else {
-		double Ds = (x - k*(b - y))*(x - k*(b - y)) - (1 + k*k)*(x*x + (b - y)*(b - y) - r*r);
-		if (Ds >= 0.0) {
-			double cross_x1 = ((x - k*(b - y)) + sqrt(Ds)) / (1 + k*k), cross_y1 = k*cross_x1 + b;
-			double cosv = ((cross_x1 - x0)*(x2 - x0) + (cross_y1 - y0)*(y2 - y0)) / (sqrt((cross_x1 - x0)*(cross_x1 - x0) + (cross_y1 - y0)*(cross_y1 - y0)));
-			if (cosv >= -EPS) {
-				return true;
-			}
-			return false;
-		}
-	}
-	return false;
+	double xfe = cos(angle);
+	double yfe = sin(angle);
+	double xse = cos(angle + step_angle);
+	double yse = sin(angle + step_angle);
+	double xo = x - player->GetX();
+	double yo = y - player->GetY();
+
+	//angle first eye - object
+	double acos_val = (xfe*xo + yfe*yo) / sqrt(xo*xo + yo*yo);
+	double angleA = acos(acos_val);
+	if (angleA < 0.0)
+		angleA += M_PI;
+	//angle second eye - object
+	acos_val = (xse*xo + yse*yo) / sqrt(xo*xo + yo*yo);
+	double angleB = acos(acos_val);
+	if (angleB < 0.0)
+		angleB += M_PI; 
+
+	return angleA - step_angle <= DBL_EPSILON && angleB - step_angle <= DBL_EPSILON;
 }
 
 bool check(Element *player, Element *elem, double angle, double step_angle)
@@ -210,21 +199,6 @@ pair<double, ElementType> getDistanceOnWall(Player *me, World *w, double angle, 
 
 void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 {
-	/*inputs.at(0, 0) = me->GetX();
-	inputs.at(0, 1) = me->GetY();
-	int i = 1;
-	for each (auto cur in w->GetFood())
-	{
-		if (i == FOOD_COUNT)
-			break;
-
-		inputs.at(0, 2*i) = cur->GetX();
-		inputs.at(0, 2*i + 1) = cur->GetY();
-	}
-
-
-
-	return;*/
 	const double step_angle = M_PI*2.0 / eyes;
 	double angle = M_PI / 100;
 
@@ -236,13 +210,18 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 		double dist = DBL_MAX;
 		ElementType cur_type = ElementType::TENEMY;
 		//food
+		int food_counter = 0;
 		for each (auto cur in w->GetFood())
 		{
 			dist = me->GetDistanceTo(cur);
-			if (check(me, cur, angle, step_angle) && dist < min_dist)
+			if (check(me, cur, angle, step_angle))
 			{
-				min_dist = dist;
-				cur_type = ElementType::TFOOD;
+				if (dist < min_dist)
+				{
+					min_dist = dist;
+					cur_type = ElementType::TFOOD;
+				}
+				food_counter++;
 			}
 
 		}
@@ -275,10 +254,19 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 		}
 		if (cur_type == TENEMY)
 			int y = 0;
-		inputs.at(0, eye) = min_dist / (640 * 480);
-		inputs.at(0, eye + 1) = cur_type;
+		inputs.at(0, 3*eye) = min_dist / (640 * 480);
+		inputs.at(0, 3*eye + 1) = cur_type;
+		int val;
+		switch (cur_type)
+		{
+			case ElementType::TFOOD:
+				val = food_counter;
+			define:
+				val = 1;
+		}
+		inputs.at(0, 3 * eye + 2) = val;
 
-		eye += 2;
+		eye++;
 		angle += step_angle;
 	}
 
@@ -290,26 +278,29 @@ NeuroNet::Matrix2d last_inputs;
 int tick = -1;
 NeuroNet::Matrix2d lastQ;
 double last_full = 0.0;
+void MyPlayer::Init()
+{
+	SetName(L"NeuroPlayer");
+	SetEyeCount(SENSOR_COUNT);
+	net = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::SIGM);
+}
 void MyPlayer::Move()
 {
-	//try use context in training!!! 
-	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
-
 	tick++;
 
 	/////////////////////////////////////////////////////////////////////
 	///////////////////////// InitFill input vector /////////////////////////
 	last_inputs = inputs;
-	//inputs.Fill(0.0);
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
 	int rnd = NeuroNet::myrand();
 	int action = rnd%Actions::COUNT;
-	double reward = this->GetFullness() - last_full;
+	double dist_on_wall = min(GetX(), min(GetY(), min(GetWorld()->GetHeight() - GetY(), GetWorld()->GetWidth() - GetX())));
+	double wallPenalty = -0.2 * exp(-dist_on_wall / 50.0);
+	double reward = this->GetFullness() - last_full + wallPenalty;
 	NeuroNet::Matrix2d Context = net.GetContext();
 	last_full = this->GetFullness();
-	////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
-	if (!FirstStep)
+	if (tick < 12000 && !FirstStep)
 	{
 		net.Run(inputs);
 		NeuroNet::Matrix2d Q = net.GetOut();
@@ -338,7 +329,7 @@ void MyPlayer::Move()
 	}
 
 	NeuroNet::Matrix2d Q;
-	if ((rnd % 28) < 5)
+	if (tick < 7000 && (rnd % 28) < 5)
 	{
 		action = rnd % Actions::COUNT;
 		lastAction = action;
@@ -365,8 +356,7 @@ void MyPlayer::Move()
 	lastQ = Q;
 	if (tick > 0 && tick % 5000 == 0)
 	{
-		////debug << ERRORDEF << " " << std::string(__FILE__) << "(" << __LINE__ << "):" << std::string(__FUNCTION__) << std::endl;
-		//debug << std::endl << std::endl << "========================================================" << tick << "========================================================" << std::endl;
+		debug << std::endl << std::endl << "========================================================" << tick << "========================================================" << std::endl;
 		net.PrintFullInfo(debug);
 		debug.flush();
 	}

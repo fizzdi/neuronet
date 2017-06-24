@@ -15,8 +15,8 @@ const int BLOCK_COUNT = 0;
 const int PLAYER_COUNT = 1;
 
 //Neural config
-const int SENSOR_COUNT = 32;
-const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
+const int SENSOR_COUNT = 8;
+const int INPUT_NEURON_COUNT = SENSOR_COUNT * 3;
 const int HIDDEN_NEURON_COUNT = 200;
 const int OUTPUT_NEURON_COUNT = 4;
 const int TEST_COUNT = 100;

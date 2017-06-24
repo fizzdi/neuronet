@@ -20,7 +20,7 @@ NeuralNetwork::NeuralNetwork(int InputCount, int OutputCount, int NeuronCount, A
 	countLayers = (int)layers.size();
 }
 
-double NeuralNetwork::RunTrainingSetOffline(std::deque<Problem> &TrainingSet)
+double NeuralNetwork::RunTrainingSetOffline(training_set &TrainingSet)
 {
 	for (int i = 0; i < countLayers; ++i)
 	{
