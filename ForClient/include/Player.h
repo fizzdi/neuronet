@@ -1,11 +1,14 @@
+#ifndef _PLAYER
+#define _PLAYER
+
 #pragma once
 
 #include "Element.h"
 #include "World.h"
+#include "Global.h"
 #include <vector>
 
 class World;
-
 class  __declspec (dllexport) Player : public Element {
 	friend class World;
 private:
@@ -24,6 +27,8 @@ private:
 	bool RunTime;
 	bool TimeLimit;
 	bool MemoryLimit;
+	int EyeCount;
+	std::vector<D3DCOLOR> EyeColors;
 
 private:
 	void Render(LPDIRECT3DDEVICE9 d3ddev);
@@ -72,8 +77,15 @@ public:
 	void StepLeft();
 	void StepRight();
 
+	void SetEyeCount(int c) { EyeCount = c; EyeColors.resize(EyeCount, D3DCOLOR_XRGB(255, 255, 255)); };
+	int GetEyeCount() { return EyeCount; };
+
+	void SetEyeColor(int i, D3DCOLOR col) { EyeColors[i] = col; };
+	D3DCOLOR GetEyeColor(int i) { return EyeColors[i]; };
+
 	virtual void Init() {};
 	virtual void Move() {};
 };
 
+#endif
 

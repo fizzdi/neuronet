@@ -1,3 +1,5 @@
+#ifndef _BONUS
+#define _BONUS
 #pragma once
 
 #include "Element.h"
@@ -28,7 +30,7 @@ public:
 	Bonus() { Type = UNKNOWN_BONUS; Damage = Lifetime = 0; Taken = false; };
 	int GetType() { return Type; };
 	int GetLifeTime() { return Lifetime; };
-	int GetDamage() { return Damage; };
+	virtual int GetDamage() { return Damage; };
 protected:
 	void SetType(int NewType) { Type = NewType; };
 	void SetLifetime(int NewLifetime) { Lifetime = NewLifetime; };
@@ -49,7 +51,9 @@ public:
 	Food() {
 		SetType(FOOD); Fullness = 0; 
 	};
-	int GetFullness() { return Fullness; };	
+	int GetFullness() { return Fullness; };
+private:
+	using Bonus::GetDamage;
 };
 
 class  Weapon : public Bonus {
@@ -97,5 +101,7 @@ public:
 	Bow() { SetWeaponType(BOW); ArrowCount = 0; };
 	int GetArrowCount() { return ArrowCount; };
 };
+
+#endif
 
 

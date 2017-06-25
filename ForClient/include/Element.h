@@ -1,8 +1,10 @@
+#ifndef _ELEMENT
+#define _ELEMENT
 #pragma once
 
 #include "DirectXRender.h"
 
-class  Element {
+class  __declspec (dllexport) Element {
 private:
 	int X, Y;
 	int R;
@@ -18,3 +20,4 @@ private:
 	void Render(LPDIRECT3DDEVICE9 d3ddev) {};
 	void RenderFull(LPDIRECT3DDEVICE9 d3ddev) {};
 };
+#endif

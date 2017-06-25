@@ -1,3 +1,5 @@
+#ifndef _MY_UNIT
+#define _MY_UNIT
 #pragma once
 
 #include "Element.h"
@@ -81,3 +83,5 @@ public:
 	bool HasKnife() { return KnifeCount != 0; };
 	bool HasBow() { return BowCount != 0; };
 };
+
+#endif
