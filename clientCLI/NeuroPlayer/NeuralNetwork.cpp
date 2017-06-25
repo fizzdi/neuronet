@@ -8,17 +8,42 @@ NeuralNetwork::NeuralNetwork(int InputCount, int OutputCount, int NeuronCount, A
 {
 	layers.clear();
 	layers.emplace_back(Layer(InputCount, 0, LINE));
-	layers.emplace_back(Layer(NeuronCount, InputCount, HiddenLayerFunction));
-	layers.back().NguenWidrow(-2, 2, -1, 1);
-	/*layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
-	layers.back().NguenWidrow(-2, 2, -1, 1);*/
-	/*layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
-	layers.back().NguenWidrow(-2, 2, -1, 1);
-	*/
-	
+	for (int i = 0; i < HIDDEN_LAYER_COUNT; ++i)
+	{
+		layers.emplace_back(Layer(NeuronCount, InputCount, HiddenLayerFunction));
+		layers.back().NguenWidrow(-2, 2, -1, 1);
+	}
 	layers.emplace_back(Layer(OutputCount, NeuronCount, LINE));
-	//layers.back().NguenWidrow(-1, 1, -1, 1);
 	countLayers = (int)layers.size();
+}
+
+NeuroNet::NeuralNetwork::NeuralNetwork(std::string FileName)
+{
+	std::ifstream fi(FileName);
+	std::string str;
+	std::getline(fi, str);
+	//Neural config
+	fi >> SENSOR_COUNT;
+	fi >> INPUT_NEURON_COUNT;
+	fi >> HIDDEN_NEURON_COUNT;
+	fi >> HIDDEN_LAYER_COUNT; 
+	fi >> OUTPUT_NEURON_COUNT;
+	fi >> TEST_COUNT;
+	fi >> MAX_TEST_COUNT;
+	fi >> TRAIN_EPOCH;
+	fi >> TRAIN_PERIOD;
+	fi >> TRAIN_EPS;
+
+	//RMS config
+	fi >> RMS_GAMMA;
+	fi >> RMS_LEARNRATE;
+	fi >> RMS_EPSILON;
+
+	for (int i = 1; i < countLayers; ++i)
+		fi >> layers[i].Weights;
+
+	for (int i = 1; i < countLayers; ++i)
+		fi >> layers[i].Bias;
 }
 
 double NeuralNetwork::RunTrainingSetOffline(training_set &TrainingSet)
@@ -294,6 +319,7 @@ void NeuroNet::NeuralNetwork::PrintFullInfo(std::ostream & debug) const
 	debug << SENSOR_COUNT << std::endl;
 	debug << INPUT_NEURON_COUNT << std::endl;
 	debug << HIDDEN_NEURON_COUNT << std::endl;
+	debug << HIDDEN_LAYER_COUNT << std::endl;
 	debug << OUTPUT_NEURON_COUNT << std::endl;
 	debug << TEST_COUNT << std::endl;
 	debug << MAX_TEST_COUNT << std::endl;

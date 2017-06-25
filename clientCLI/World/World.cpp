@@ -202,7 +202,7 @@ void World::LoadPlayers() {
 				NewPlayer->SetR(20);
 				NewPlayer->SetWorld(this);
 				//NewPlayer->SetSpeed(10);
-				NewPlayer->SetSpeed(15);
+				NewPlayer->SetSpeed(30);
 				NewPlayer->SetAngle(M_PI*0.5);
 				//NewPlayer->SetFullness(300);
 				NewPlayer->SetFullness(1);
@@ -232,7 +232,7 @@ void World::UnloadPlayers() {
 
 
 void World::GenerateFood() {
-	int FoodCount = rand() % 10;
+	int FoodCount = rand() % 60;
 	for (int i = 0; i < FoodCount; ++i) {
 		Food *NewFood = new Food();
 		NewFood->SetCoords(rand() % 600 + 20, rand() % 425 + 20);

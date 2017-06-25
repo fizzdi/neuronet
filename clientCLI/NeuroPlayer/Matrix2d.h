@@ -70,6 +70,7 @@ namespace NeuroNet
 		//double at(const int i, const int j) const;
 
 		friend std::ostream& operator<< (std::ostream &os, const Matrix2d &m);
+		friend std::istream& operator>> (std::istream &os, Matrix2d &m);
 		friend Matrix2d sqrt(const Matrix2d&rhs);
 	};
 

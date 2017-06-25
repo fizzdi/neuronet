@@ -335,6 +335,15 @@ std::ostream & NeuroNet::operator<<(std::ostream & os, const Matrix2d & m)
 	return os;
 }
 
+std::istream & NeuroNet::operator >> (std::istream & os, Matrix2d & m)
+{
+	for (int j = 0; j < m.GetVerticalSize(); ++j)
+		for (int k = 0; k < m.GetHorizontalSize(); ++k)
+			os >> m.at(j, k);
+
+	return os;
+}
+
 Matrix2d NeuroNet::sqrt(const Matrix2d & rhs)
 {
 	int n = rhs.GetVerticalSize();

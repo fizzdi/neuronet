@@ -16,8 +16,6 @@ using namespace std;
 
 ofstream debug("neurodebug.txt");
 
-enum Actions { FORWARD, BACKWARD, LEFTSTEP, RIGHTSTEP, COUNT };
-
 //q learning
 const double QL_LEARN = 0.9;
 const int COUNT_REWARD = 50;
@@ -26,29 +24,10 @@ int lastAction = 0;
 
 deque<NeuroNet::Problem> TrainingSet;
 
-void DoAction(MyPlayer* me, Actions action)
+void DoAction(MyPlayer* me, int direction)
 {
-	switch (action)
-	{
-	case Actions::FORWARD:
-		me->StepForward();
-		break;
-
-	case Actions::BACKWARD:
-		me->StepBackward();
-		break;
-
-	case Actions::LEFTSTEP:
-		me->StepLeft();
-		break;
-
-	case Actions::RIGHTSTEP:
-		me->StepRight();
-		break;
-
-	default:
-		break;
-	}
+	double angle = 2 * M_PI / SENSOR_COUNT;
+	me->MoveTo(me->GetX() + 600 * cos(0.01 + angle*direction + 0.5*angle), me->GetY() - 600 * sin(0.01 + angle*direction + 0.5*angle));
 }
 
 bool FirstStep = true;
@@ -258,19 +237,6 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 		inputs.at(0, 2 * eye) = min_dist / 800;
 		inputs.at(0, 2 * eye + 1) = cur_type;
 
-		//inputs.at(0, 3 * eye) = min_dist;
-		/*inputs.at(0, 3 * eye) = min_dist / (640 * 480);
-		inputs.at(0, 3 * eye + 1) = cur_type;
-		/*int val = 0;
-		switch (cur_type)
-		{
-		case ElementType::TFOOD:
-			val = food_counter;
-		define:
-			val = 1;
-		}
-		inputs.at(0, 3 * eye + 2) = val;*/
-
 		eye++;
 		angle += step_angle;
 	}
@@ -280,9 +246,10 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT);
 NeuroNet::Matrix2d last_inputs;
 
-int tick = -1;
+int tick = -2;
 NeuroNet::Matrix2d lastQ;
 double last_full = 0.0;
+double last_reward = 0.0;
 void MyPlayer::Init()
 {
 	SetName(L"NeuroPlayer");
@@ -299,11 +266,11 @@ void MyPlayer::Move()
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
 	/////////////////////////////////////////////////////////////////////
 	int rnd = NeuroNet::myrand();
-	int action = rnd%Actions::COUNT;
+	int action = rnd%SENSOR_COUNT;
 	double dist_on_wall = min(GetX(), min(GetY(), min(GetWorld()->GetHeight() - GetY(), GetWorld()->GetWidth() - GetX())));
-	double wallPenalty = +0.5 * exp(-dist_on_wall / 50.0);
-	double reward = this->GetFullness() - last_full + wallPenalty;
-	//debug << "rew " << reward << endl;
+	double wallPenalty = -0.9 * exp(-dist_on_wall / 80.0);
+	double reward = (this->GetFullness() > last_full) + wallPenalty;
+	last_reward = reward;
 	last_full = this->GetFullness();
 	if (!FirstStep)
 	{
@@ -321,26 +288,24 @@ void MyPlayer::Move()
 		}
 		Q.at(0, lastAction) = reward + QL_LEARN*tmp;
 		net.SetContext(Context);
-		NeuroNet::AddTest(TrainingSet, last_inputs, Q);
+			NeuroNet::AddTest(TrainingSet, last_inputs, Q);
 		if (tick % TRAIN_PERIOD == 0)
 		{
-			int Epoch = TRAIN_EPOCH;
-				double error;
+			int Epoch = max(1, TRAIN_EPOCH * (1.0 - tick * 1.0 / (END_TRAIN_TICK)));
+			double error;
 			while (Epoch--)
 			{
 				if ((error = net.RMSTraining(TrainingSet)) < TRAIN_EPS)
 					break;
-			//debug << error << std::endl;
 			}
-			//debug << std::endl;
 		}
 		net.SetContext(Context);
 	}
 
 	NeuroNet::Matrix2d Q;
-	if (tick < 5000 && (rnd % 28) < 5)
+	if ((rnd % 100) < 3)
 	{
-		action = rnd % Actions::COUNT;
+		action = rnd % SENSOR_COUNT;
 		lastAction = action;
 	}
 	else
@@ -358,7 +323,7 @@ void MyPlayer::Move()
 		}
 	}
 
-	DoAction(this, (Actions)action);
+	DoAction(this, action);
 	FirstStep = false;
 	lastAction = action;
 	lastQ = Q;

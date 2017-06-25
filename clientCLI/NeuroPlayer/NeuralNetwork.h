@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <deque>
+#include <string>
 
 //World config
 const int PARAMS_COUNT = 3; //HEALTH, FULLNESS, ANGLE
@@ -15,21 +16,22 @@ const int BLOCK_COUNT = 0;
 const int PLAYER_COUNT = 1;
 
 //Neural config
-const int SENSOR_COUNT = 16;
-const int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
-const int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT*2;
-const int OUTPUT_NEURON_COUNT = 4;
-const int TEST_COUNT = 30;
-const int MAX_TEST_COUNT = 1000;
-const int TRAIN_EPOCH = 20;
-const int TRAIN_PERIOD = 5;
-const double TRAIN_EPS = 1e-3;
-const int RANDOM_ACTION_PERIOD = 5;
+static int SENSOR_COUNT = 16;
+static int INPUT_NEURON_COUNT = SENSOR_COUNT * 2;
+static int HIDDEN_NEURON_COUNT = INPUT_NEURON_COUNT*4;
+static int HIDDEN_LAYER_COUNT = 2;
+static int OUTPUT_NEURON_COUNT = SENSOR_COUNT;
+static int TEST_COUNT = 15;
+static int MAX_TEST_COUNT = 4000;
+static int TRAIN_EPOCH = 1;
+static int TRAIN_PERIOD = 3;
+static double TRAIN_EPS = 1e-3;
+static int END_TRAIN_TICK = 10000;
 
 //RMS config
-const double RMS_GAMMA = 0.9;
-const double RMS_LEARNRATE = 1e-3;
-const double RMS_EPSILON = 1e-2;
+static double RMS_GAMMA = 0.9;
+static double RMS_LEARNRATE = 1e-3;
+static double RMS_EPSILON = 1e-2;
 
 namespace NeuroNet
 {
@@ -51,6 +53,7 @@ namespace NeuroNet
 		//Constructors
 		NeuralNetwork() {};
 		NeuralNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
+		NeuralNetwork(std::string FileName);
 		
 		//Methods
 		void Run(const std::vector<double>& input);
