@@ -15,10 +15,10 @@
 using namespace std;
 
 ofstream debug("neurodebug.txt");
+ofstream info_stream("info.txt");
 
 //q learning
 const double QL_LEARN = 0.9;
-const int COUNT_REWARD = 50;
 
 int lastAction = 0;
 
@@ -205,8 +205,20 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 
 		}
 
-		if (cur_type == TENEMY)
-			int y = 0;
+		//enemy
+		for each (auto cur in w->GetPlayers())
+		{
+			if (cur == me) continue;
+			dist = me->GetDistanceTo(cur);
+			if (check(me, cur, angle, step_angle))
+			{
+				if (dist < min_dist)
+				{
+					min_dist = dist;
+					cur_type = ElementType::TENEMY;
+				}
+			}
+		}
 
 		//block
 		for each (auto cur in w->GetBlocks())
@@ -218,21 +230,14 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 				cur_type = ElementType::TBLOCK;
 			}
 		}
-		if (cur_type == TENEMY)
-			int y = 0;
-
 
 		auto res = getDistanceOnWall(me, w, angle, step_angle);
-		if (res.second == TENEMY)
-			int y = 0;
 
 		if (min_dist > res.first)
 		{
 			min_dist = res.first;
 			cur_type = res.second;
 		}
-		if (cur_type == TENEMY)
-			int y = 0;
 
 		inputs.at(0, 2 * eye) = min_dist / 800;
 		inputs.at(0, 2 * eye + 1) = cur_type;
@@ -254,13 +259,12 @@ void MyPlayer::Init()
 {
 	SetName(L"NeuroPlayer");
 	SetEyeCount(SENSOR_COUNT);
-	net = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, NeuroNet::AFType::TANH);
+	net = NeuroNet::ElmanNetwork(INPUT_NEURON_COUNT, OUTPUT_NEURON_COUNT, HIDDEN_NEURON_COUNT, FUN_ACT);
 }
 void MyPlayer::Move()
 {
 	tick++;
 
-	/////////////////////////////////////////////////////////////////////
 	///////////////////////// InitFill input vector /////////////////////////
 	last_inputs = inputs;
 	setInput(inputs, this, SENSOR_COUNT, GetWorld());
@@ -288,14 +292,14 @@ void MyPlayer::Move()
 		}
 		Q.at(0, lastAction) = reward + QL_LEARN*tmp;
 		net.SetContext(Context);
-			NeuroNet::AddTest(TrainingSet, last_inputs, Q);
+		NeuroNet::AddTest(TrainingSet, last_inputs, Q);
 		if (tick % TRAIN_PERIOD == 0)
 		{
 			int Epoch = max(1, TRAIN_EPOCH * (1.0 - tick * 1.0 / (END_TRAIN_TICK)));
 			double error;
 			while (Epoch--)
 			{
-				if ((error = net.RMSTraining(TrainingSet)) < TRAIN_EPS)
+				if ((error = net.RPROPTraining(TrainingSet)) < TRAIN_EPS)
 					break;
 			}
 		}
@@ -329,8 +333,8 @@ void MyPlayer::Move()
 	lastQ = Q;
 	if (tick > 0 && tick % 3000 == 0)
 	{
-		debug << std::endl << std::endl << "========================================================" << tick << "========================================================" << std::endl;
-		net.PrintFullInfo(debug);
-		debug.flush();
+		info_stream << std::endl << std::endl << "========================================================" << tick << "========================================================" << std::endl;
+		net.PrintFullInfo(info_stream);
+		info_stream.flush();
 	}
 }

@@ -164,12 +164,13 @@
     <ClCompile Include="Matrix2d.cpp" />
     <ClCompile Include="MyPlayer.cpp" />
     <ClCompile Include="MyPlayerExport.cpp" />
-    <ClCompile Include="NeuralNetwork.cpp" />
+    <ClCompile Include="MLP.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ElmanNetwork.h" />
     <ClInclude Include="Layer.h" />
     <ClInclude Include="Matrix2d.h" />
+    <ClInclude Include="MLP.h" />
     <ClInclude Include="MyPlayer.h" />
     <ClInclude Include="NeuralNetwork.h" />
   </ItemGroup>

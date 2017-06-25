@@ -9,7 +9,6 @@ namespace client
 {
     class World
     {
-        public Server server;
         private bool isInit = false;
         private IntPtr _world = IntPtr.Zero;
         [DllImport("kernel32.dll")]
@@ -30,16 +29,10 @@ namespace client
 
         public void addPlayers(params int[] submits)
         {
-            if (!isInit) init();
-            foreach (var submit in submits)
-                server.downloadDll(submit);
         }
 
         public void addBots(params string[] names)
         {
-            if (!isInit) init();
-            foreach (var bot in names)
-                server.downloadBotDll(bot);
         }
 
         private static RunWorld rw;

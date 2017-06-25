@@ -19,7 +19,7 @@ bool PerformCompilation();
 void Compile();
 char CurDir[MAX_STR_LEN];
 #define DIRECTXPATH "C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)\\"
-#define MVSDIR "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\"
+#define MVSDIR "D:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\"
 #define OUTDIR "players"
 #define INCLUDEDIR "include"
 #define SULUTIONDIR "solutions"
@@ -141,10 +141,13 @@ bool PerformCompilation() {
 	WIN32_FIND_DATA findFileData;
 	//ostringstream filedir;
 	//filedir << CurDir << "\sou"
-	HANDLE hl = FindFirstFile("solutions\\*.cpp", &findFileData);
+	HANDLE hl = FindFirstFile("solutions\\*", &findFileData);
 	if (hl == INVALID_HANDLE_VALUE) return false;
 	do
 	{
+		debugout << "File: \"" << findFileData.cFileName << "\""<< endl;
+		if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) continue;
+		if (string(findFileData.cFileName) == "." || string(findFileData.cFileName) == "..") continue;
 		////////////////////////////////////////////// построение строки компиляции ///////////////////////////////////////////
 		SYSTEMTIME st;
 		GetLocalTime(&st);
@@ -153,9 +156,9 @@ bool PerformCompilation() {
 		os << "\"" << MVSDIR << "vcvarsall.bat\" & " << "cl.exe "
 			<< "/I \"" << DIRECTXPATH << "include\" "
 			<< "/I \"" << CurDir << "\\" << INCLUDEDIR << "\" "
-			<< "/D_USRDLL /D_WINDLL \"" << CurDir << "\\" << SULUTIONDIR << "\\" << findFileData.cFileName << "\" \"" << CurDir << "\\include\\MyPlayerExport.cpp\" /link /DLL " 
+			<< "/D_USRDLL /D_WINDLL \"" << CurDir << "\\" << SULUTIONDIR << "\\"<<findFileData.cFileName << "\\*.cpp\" /link /DLL " 
 			<< "/OUT:\""<< CurDir << "\\" << OUTDIR
-			<< "\\" << setfill('0') << setw(2) << st.wDay << setw(2) << st.wMonth << st.wYear << "_" << setw(2) << st.wHour << setw(2) << st.wMinute << setw(2) << st.wSecond << "_" << st.wMilliseconds << ".dll\""
+			<< "\\" << findFileData.cFileName << ".dll\""
 			<< " /MACHINE:X86 /SUBSYSTEM:WINDOWS /LIBPATH:\"" << DIRECTXPATH << "Lib\\x86\" "
 			<< "/libpath:\"" << CurDir << "\\" << INCLUDEDIR << "\" /TLBID:1 /MD /OPENMP"
 			//delete lib && obj files

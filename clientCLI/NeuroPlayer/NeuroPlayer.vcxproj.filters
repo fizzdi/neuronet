@@ -30,6 +30,9 @@
     <ClInclude Include="NeuralNetwork.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MLP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyPlayer.cpp">
@@ -47,7 +50,7 @@
     <ClCompile Include="ElmanNetwork.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="NeuralNetwork.cpp">
+    <ClCompile Include="MLP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

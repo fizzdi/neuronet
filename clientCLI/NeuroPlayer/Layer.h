@@ -1,8 +1,6 @@
 #pragma once
 #include "Matrix2d.h"
 
-
-
 namespace NeuroNet
 {
 	enum AFType { LINE, SIGM, TANH };

@@ -4,21 +4,28 @@
 #include <iostream>
 #include <fstream>
 #include <deque>
-#include "NeuralNetwork.h"
+#include "MLP.h"
 
 namespace NeuroNet
 {
-	class ElmanNetwork : public NeuralNetwork
+	class ElmanNetwork : public MLP
 	{
 	protected:
 		int context_neuron;
-		void Run();
+		virtual void Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
+		virtual void Run();
 	public:
-		using NeuralNetwork::Run;
+		using MLP::Run;
+		//construct 
 		ElmanNetwork() {};
 		ElmanNetwork(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction);
+		ElmanNetwork(const std::string& FileName);
+
+		//trainings
+		double RMSTraining(training_set &TrainingSet);
+
+		//Gets/Sets
 		Matrix2d GetContext();
 		void SetContext(const Matrix2d& context);
-		double RMSTraining(training_set &TrainingSet);
 	};		
 }
