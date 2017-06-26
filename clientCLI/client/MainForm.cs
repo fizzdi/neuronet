@@ -93,15 +93,19 @@ namespace client
             int n = 1;
             foreach (var pl in players)
             {
-                if (pl.Count == 1)
-                    File.Copy((string)pl[0], (string)pl[0]);
+                string pl_str = "player" + n;
+                Directory.CreateDirectory("solutions\\" + pl_str);
+                foreach (var file in Directory.GetFiles("solutions\\" + pl_str))
+                    File.Delete(file);
+
+                if (pl.Count <= 2)
+                {
+                    File.Copy("template\\MyPlayer.h", "solutions\\" + pl_str + "\\MyPlayer.h");
+                    File.Copy("template\\MyPlayerExport.cpp", "solutions\\" + pl_str + "\\MyPlayerExport.cpp");
+                    File.Copy((string)pl[0], "solutions\\" + pl_str + "\\" + Path.GetFileName((string)pl[0]));
+                }
                 else
                 {
-                    string pl_str = "player" + n;
-                    Directory.CreateDirectory("solutions\\" + pl_str);
-                    foreach (var file in Directory.GetFiles("solutions\\" + pl_str))
-                        File.Delete(file);
-
                     foreach (var file in Directory.GetFiles("template"))
                         File.Copy(file, "solutions\\" + pl_str + "\\" + Path.GetFileName(file), true);
                     String res = File.ReadAllText("template\\MLP.h");
@@ -136,7 +140,7 @@ namespace client
             //-----
 
             var lib = LoadLibrary("solve_compiller.dll");
-
+            
             using (StreamWriter wr = new StreamWriter("dlldebug.txt"))
             {
                 if (lib == IntPtr.Zero)
@@ -203,6 +207,12 @@ namespace client
                     sw.WriteLine();
                 }
             }
+        }
+
+        private void MainForm_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.F9)
+                world.start();
         }
     }
 }

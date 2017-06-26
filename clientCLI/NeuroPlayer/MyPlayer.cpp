@@ -250,7 +250,7 @@ void setInput(NeuroNet::Matrix2d &inputs, Player *me, const int eyes, World *w)
 }
 NeuroNet::Matrix2d inputs(1, INPUT_NEURON_COUNT);
 NeuroNet::Matrix2d last_inputs;
-
+std::ofstream pr("res.txt");
 int tick = -2;
 NeuroNet::Matrix2d lastQ;
 double last_full = 0.0;
@@ -336,5 +336,9 @@ void MyPlayer::Move()
 		info_stream << std::endl << std::endl << "========================================================" << tick << "========================================================" << std::endl;
 		net.PrintFullInfo(info_stream);
 		info_stream.flush();
+	}
+	if (tick % 5 == 0)
+	{
+		pr << tick << " " << GetFullness() << std::endl;
 	}
 }

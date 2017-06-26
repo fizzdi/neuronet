@@ -144,9 +144,9 @@
             this.label8.AutoSize = true;
             this.label8.Location = new System.Drawing.Point(7, 24);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(140, 17);
+            this.label8.Size = new System.Drawing.Size(122, 17);
             this.label8.TabIndex = 29;
-            this.label8.Text = "Скорость обучения:";
+            this.label8.Text = "Дисконт-фактор:";
             // 
             // nud_q_learn
             // 
@@ -805,6 +805,7 @@
             this.Controls.Add(this.p_solve);
             this.Name = "Edit_player";
             this.Text = "Настройка персонажа";
+            this.Load += new System.EventHandler(this.Edit_player_Load);
             this.p_net.ResumeLayout(false);
             this.p_net.PerformLayout();
             this.gr17.ResumeLayout(false);

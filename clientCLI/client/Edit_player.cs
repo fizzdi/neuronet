@@ -24,7 +24,7 @@ namespace client
         public Edit_player(List<object> p_opt)
         {
             InitializeComponent();
-            if (p_opt.Count == 1)
+            if (p_opt.Count <= 2)
             {
                 string filename = (string)p_opt[0];
                 rb_solve.Checked = true;
@@ -135,6 +135,11 @@ namespace client
             }
             DialogResult = DialogResult.OK;
             Close();
+        }
+
+        private void Edit_player_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

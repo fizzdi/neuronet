@@ -27,13 +27,17 @@ void NeuroNet::MLP::Init(int InputCount, int OutputCount, int NeuronCount, AFTyp
 {
 	layers.clear();
 	layers.emplace_back(Layer(InputCount, 0, LINE));
-	for (int i = 0; i < HIDDEN_LAYER_COUNT; ++i)
+	layers.emplace_back(Layer(NeuronCount, InputCount, HiddenLayerFunction));
+	layers.back().NguenWidrow(-2, 2, -1, 1); 
+	for (int i = 1; i < HIDDEN_LAYER_COUNT; ++i)
 	{
-		layers.emplace_back(Layer(NeuronCount, InputCount, HiddenLayerFunction));
+		layers.emplace_back(Layer(NeuronCount, NeuronCount, HiddenLayerFunction));
 		layers.back().NguenWidrow(-2, 2, -1, 1);
 	}
 	layers.emplace_back(Layer(OutputCount, NeuronCount, LINE));
 	countLayers = (int)layers.size();
+	inputNeuron = InputCount;
+	this->outputNeuron = OutputCount;
 }
 
 void MLP::Run()
@@ -272,14 +276,34 @@ double MLP::RPROPTraining(training_set &TrainingSet)
 		layers[i].DeltaSum.Fill(0.0);
 	}
 
-	for (int t = 0; t < TrainingSet.size(); ++t)
+	std::queue<int> tests;
+	if (TrainingSet.size() < TEST_COUNT)
 	{
-		Run(TrainingSet[t].inputs);
-		CalcGradDelta(TrainingSet[t].outputs);
-		for (int i = 1; i < countLayers; ++i)
+		for (int test = 0; test < TrainingSet.size(); ++test)
 		{
-			layers[i].GradSum += layers[i].Grad;
-			layers[i].DeltaSum += layers[i].Delta;
+			tests.push(test);
+			Run(TrainingSet[test].inputs);
+			CalcGradDelta(TrainingSet[test].outputs);
+			for (int i = 1; i < countLayers; ++i)
+			{
+				layers[i].GradSum += layers[i].Grad;
+				layers[i].DeltaSum += layers[i].Delta;
+			}
+		}
+	}
+	else
+	{
+		for (int t = 0; t < TEST_COUNT; ++t)
+		{
+			int test = myrand() % TrainingSet.size();
+			tests.push(test);
+			Run(TrainingSet[test].inputs);
+			CalcGradDelta(TrainingSet[test].outputs);
+			for (int i = 1; i < countLayers; ++i)
+			{
+				layers[i].GradSum += layers[i].Grad;
+				layers[i].DeltaSum += layers[i].Delta;
+			}
 		}
 	}
 
@@ -298,10 +322,11 @@ double MLP::RPROPTraining(training_set &TrainingSet)
 
 
 	double error = 0.0;
-	for each (Problem test in TrainingSet)
+	while (!tests.empty())
 	{
-		Run(test.inputs);
-		error += CalculateError(test);
+		Run(TrainingSet[tests.front()].inputs);
+		error += CalculateError(TrainingSet[tests.front()]);
+		tests.pop();
 	}
 	return error;
 }

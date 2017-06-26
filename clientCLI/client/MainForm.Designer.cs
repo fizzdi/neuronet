@@ -124,12 +124,14 @@
             this.Controls.Add(this.groupBox6);
             this.Controls.Add(this.button2);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.KeyPreview = true;
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MinimumSize = new System.Drawing.Size(497, 314);
             this.Name = "MainForm";
             this.Text = "TrainClient for Hunger Game Challenge";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);
             this.groupBox6.ResumeLayout(false);
             this.ResumeLayout(false);
 
