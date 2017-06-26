@@ -179,7 +179,7 @@ namespace client
         {
             string str = lb_players.SelectedItem.ToString();
             int num = str[str.Length - 1] - '0';
-            nums[num] = false;
+            nums[num-1] = false;
             players.RemoveAt(lb_players.SelectedIndex);
             b_add_player.Enabled = true;
             lb_players.Items.RemoveAt(lb_players.SelectedIndex);
