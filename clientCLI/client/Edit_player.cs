@@ -13,14 +13,12 @@ namespace client
 {
     public partial class Edit_player : Form
     {
-        public bool is_net = false;
-        public string filename;
         public List<object> p_opt = new List<object>();
         public Edit_player()
         {
             InitializeComponent();
-            for (int i = 0; i < 16; ++i)
-                p_opt.Add(0);
+            cb_train_type.SelectedIndex = 0;
+            cb_fun_act.SelectedIndex = 0;
         }
 
         public Edit_player(List<object> p_opt)
@@ -28,7 +26,7 @@ namespace client
             InitializeComponent();
             if (p_opt.Count == 1)
             {
-                filename = (string)p_opt[0];
+                string filename = (string)p_opt[0];
                 rb_solve.Checked = true;
                 try
                 {
@@ -40,7 +38,6 @@ namespace client
                 {
                     Logger.LogMessage(ex);
                 }
-            is_net = false;
             }
             else
             {
@@ -54,22 +51,15 @@ namespace client
                 nud_train_period.Value = (Decimal)p_opt[6];
                 nud_train_eps.Value = (Decimal)p_opt[7];
                 nud_end_train.Value = (Decimal)p_opt[8];
-                cb_fun_act.SelectedIndex = (int)p_opt[9];
+                cb_fun_act.SelectedIndex = p_opt[9].GetType() == typeof(Decimal) ? Decimal.ToInt32((Decimal)p_opt[9]) : (int)p_opt[9];
                 nud_rms_gamma.Value = (Decimal)p_opt[10];
                 nud_rms_learnrate.Value = (Decimal)p_opt[11];
                 nud_rms_eps.Value = (Decimal)p_opt[12];
                 nud_q_learn.Value = (Decimal)p_opt[13];
                 tb_name.Text = (String)p_opt[14];
-                cb_train_type.SelectedValue = p_opt[15];
+                cb_train_type.SelectedIndex = cb_train_type.Items.IndexOf(p_opt[15]);
                 rb_net.Checked = true;
-                is_net = true;
             }
-        }
-
-        private void Edit_player_Load(object sender, EventArgs e)
-        {
-            cb_train_type.SelectedIndex = 0;
-            cb_fun_act.SelectedIndex = 0;
         }
 
         private void radioButton1_CheckedChanged(object sender, EventArgs e)
@@ -114,7 +104,9 @@ namespace client
         {
             if (rb_net.Checked)
             {
-                is_net = true;
+                while (p_opt.Count < 16)
+                    p_opt.Add(0);
+
                 p_opt[0] = nud_sensors.Value;
                 p_opt[1] = nud_hid_neurons.Value;
                 p_opt[2] = nud_hid_layers.Value;
@@ -134,11 +126,14 @@ namespace client
             }
             else
             {
-                is_net = false;
+                p_opt.Clear();
+                string filename;
                 Directory.CreateDirectory("temp");
                 filename = string.Format("temp\\{0}{1}.cpp", DateTime.Now.Millisecond.ToString(), DateTime.Now.Minute.ToString());
                 File.WriteAllText(filename, rtf_solve.Text);
+                p_opt.Add(filename);
             }
+            DialogResult = DialogResult.OK;
             Close();
         }
     }

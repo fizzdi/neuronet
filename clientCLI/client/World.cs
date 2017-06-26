@@ -27,13 +27,6 @@ namespace client
                 File.Delete(curFile);
         }
 
-        public void addPlayers(params int[] submits)
-        {
-        }
-
-        public void addBots(params string[] names)
-        {
-        }
 
         private static RunWorld rw;
 
@@ -41,10 +34,6 @@ namespace client
         {
             try
             {
-                /*if (_world != IntPtr.Zero)
-                    destroyWorld();
-                _world = LoadLibrary("World.dll");
-                */
                 try
                 {
                     rw = new RunWorld();

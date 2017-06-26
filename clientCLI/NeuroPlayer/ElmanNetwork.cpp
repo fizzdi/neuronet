@@ -58,81 +58,79 @@ void NeuroNet::ElmanNetwork::SetContext(const Matrix2d & context)
 
 double NeuroNet::ElmanNetwork::RMSTraining(training_set& TrainingSet)
 {
+	for (int i = 1; i < countLayers; ++i)
 	{
-		for (int i = 1; i < countLayers; ++i)
-		{
-			layers[i].GradSum.Fill(0.0);
-			layers[i].DeltaSum.Fill(0.0);
-		}
-
-		std::queue<int> tests;
-		Matrix2d Context = GetContext();
-		if (TrainingSet.size() < TEST_COUNT)
-		{
-			for (int test = 0; test < TrainingSet.size(); ++test)
-			{
-				tests.push(test);
-				SetContext(Context);
-				Run(TrainingSet[test].inputs);
-				CalcGradDelta(TrainingSet[test].outputs);
-				for (int i = 1; i < countLayers; ++i)
-				{
-					layers[i].GradSum += layers[i].Grad;
-					layers[i].DeltaSum += layers[i].Delta;
-				}
-			}
-		}
-		else
-		{
-			for (int t = 0; t < TEST_COUNT; ++t)
-			{
-				int test = myrand() % TrainingSet.size();
-				tests.push(test);
-				SetContext(Context);
-				Run(TrainingSet[test].inputs);
-				CalcGradDelta(TrainingSet[test].outputs);
-				for (int i = 1; i < countLayers; ++i)
-				{
-					layers[i].GradSum += layers[i].Grad;
-					layers[i].DeltaSum += layers[i].Delta;
-				}
-			}
-		}
-
-		for (int i = 1; i < countLayers; ++i)
-		{
-			layers[i].RMS *= RMS_GAMMA;
-			layers[i].RMS += layers[i].GradSum.multiplication(layers[i].GradSum) * (1.0 - RMS_GAMMA);
-			layers[i].RMSBias *= RMS_GAMMA;
-			layers[i].RMSBias += layers[i].DeltaSum.multiplication(layers[i].DeltaSum) * (1.0 - RMS_GAMMA);
-
-			layers[i].RMSN *= RMS_GAMMA;
-			layers[i].RMSN += layers[i].GradSum * (1.0 - RMS_GAMMA);
-			layers[i].RMSNBias *= RMS_GAMMA;
-			layers[i].RMSNBias += layers[i].DeltaSum * (1.0 - RMS_GAMMA);
-		}
-
-
-		double normGrad = 0.0;
-		for (int i = 1; i < countLayers; ++i)
-			normGrad += layers[i].GradSum.multiplication(layers[i].GradSum).sum();
-		normGrad = std::sqrt(normGrad);
-		if (normGrad < 1e-2)
-			return 0.0;
-
-		RMSPropagation();
-
-		double error = 0.0;
-		while (!tests.empty())
-		{
-			SetContext(Context);
-			Run(TrainingSet[tests.front()].inputs);
-			error += CalculateError(TrainingSet[tests.front()]);
-			tests.pop();
-		}
-		SetContext(Context);
-		return error;
+		layers[i].GradSum.Fill(0.0);
+		layers[i].DeltaSum.Fill(0.0);
 	}
+
+	std::queue<int> tests;
+	Matrix2d Context = GetContext();
+	if (TrainingSet.size() < TEST_COUNT)
+	{
+		for (int test = 0; test < TrainingSet.size(); ++test)
+		{
+			tests.push(test);
+			SetContext(Context);
+			Run(TrainingSet[test].inputs);
+			CalcGradDelta(TrainingSet[test].outputs);
+			for (int i = 1; i < countLayers; ++i)
+			{
+				layers[i].GradSum += layers[i].Grad;
+				layers[i].DeltaSum += layers[i].Delta;
+			}
+		}
+	}
+	else
+	{
+		for (int t = 0; t < TEST_COUNT; ++t)
+		{
+			int test = myrand() % TrainingSet.size();
+			tests.push(test);
+			SetContext(Context);
+			Run(TrainingSet[test].inputs);
+			CalcGradDelta(TrainingSet[test].outputs);
+			for (int i = 1; i < countLayers; ++i)
+			{
+				layers[i].GradSum += layers[i].Grad;
+				layers[i].DeltaSum += layers[i].Delta;
+			}
+		}
+	}
+
+	for (int i = 1; i < countLayers; ++i)
+	{
+		layers[i].RMS *= RMS_GAMMA;
+		layers[i].RMS += layers[i].GradSum.multiplication(layers[i].GradSum) * (1.0 - RMS_GAMMA);
+		layers[i].RMSBias *= RMS_GAMMA;
+		layers[i].RMSBias += layers[i].DeltaSum.multiplication(layers[i].DeltaSum) * (1.0 - RMS_GAMMA);
+
+		layers[i].RMSN *= RMS_GAMMA;
+		layers[i].RMSN += layers[i].GradSum * (1.0 - RMS_GAMMA);
+		layers[i].RMSNBias *= RMS_GAMMA;
+		layers[i].RMSNBias += layers[i].DeltaSum * (1.0 - RMS_GAMMA);
+	}
+
+
+	double normGrad = 0.0;
+	for (int i = 1; i < countLayers; ++i)
+		normGrad += layers[i].GradSum.multiplication(layers[i].GradSum).sum();
+	normGrad = std::sqrt(normGrad);
+	if (normGrad < 1e-2)
+		return 0.0;
+
+	RMSPropagation();
+
+	double error = 0.0;
+	while (!tests.empty())
+	{
+		SetContext(Context);
+		Run(TrainingSet[tests.front()].inputs);
+		error += CalculateError(TrainingSet[tests.front()]);
+		tests.pop();
+	}
+	SetContext(Context);
+	return error;
 }
 
 void NeuroNet::ElmanNetwork::Init(int InputCount, int OutputCount, int NeuronCount, AFType HiddenLayerFunction)

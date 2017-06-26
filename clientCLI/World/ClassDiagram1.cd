@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Bonus" Collapsed="true">
+    <Position X="3.5" Y="4.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAACAAAgAAAQAAASAAAQAEgAAAAEQAVAAAAAAAAQ=</HashCode>
+      <FileName>Bonus.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Food" Collapsed="true">
+    <Position X="4.75" Y="6.75" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAACAAAgAACAAAAAAABAAAgAAgAA=</HashCode>
+      <FileName>Bonus.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Weapon" Collapsed="true">
+    <Position X="1.75" Y="6.75" Width="2.25" />
+    <InheritanceLine Type="Bonus" FixedToPoint="true">
+      <Path>
+        <Point X="4.625" Y="5.191" />
+        <Point X="4.625" Y="6.375" />
+        <Point X="2.875" Y="6.375" />
+        <Point X="2.875" Y="6.75" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AgAAAAAAAAAAAAAAACCAABIBAAEAAAgAABAAAAAAAAA=</HashCode>
+      <FileName>Bonus.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Knife" Collapsed="true">
+    <Position X="0.75" Y="8.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAACAAABAAAAAAAAAABAAAAAAAAA=</HashCode>
+      <FileName>Bonus.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Bow" Collapsed="true">
+    <Position X="3.25" Y="8.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAACAACAAAAAAAIAIAAAABAAAAAAAAA=</HashCode>
+      <FileName>Bonus.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Element" Collapsed="true">
+    <Position X="6.5" Y="0.75" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAQBAiIAAAAAAAAAAAAYBABAAAAYQA=</HashCode>
+      <FileName>Element.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Player" Collapsed="true">
+    <Position X="6.5" Y="3" Width="2.25" />
+    <Members>
+      <Method Name="~Player" Hidden="true" />
+      <Method Name="AddEnemy" Hidden="true" />
+      <Method Name="ClearEnemies" Hidden="true" />
+      <Method Name="GetAngle" Hidden="true" />
+      <Method Name="GetAngleTo" Hidden="true" />
+      <Method Name="GetColor" Hidden="true" />
+      <Method Name="GetDistanceTo" Hidden="true" />
+      <Method Name="GetEyeColor" Hidden="true" />
+      <Method Name="GetEyeCount" Hidden="true" />
+      <Method Name="GetFullness" Hidden="true" />
+      <Method Name="GetHasGolograf" Hidden="true" />
+      <Method Name="GetHealth" Hidden="true" />
+      <Method Name="GetName" Hidden="true" />
+      <Method Name="GetSpeed" Hidden="true" />
+      <Method Name="GetWorld" Hidden="true" />
+      <Method Name="MoveTo" Hidden="true" />
+      <Method Name="Player" Hidden="true" />
+      <Method Name="Render" Hidden="true" />
+      <Method Name="RenderFull" Hidden="true" />
+      <Method Name="Rotate" Hidden="true" />
+      <Method Name="SetAngle" Hidden="true" />
+      <Method Name="SetColor" Hidden="true" />
+      <Method Name="SetEyeColor" Hidden="true" />
+      <Method Name="SetEyeCount" Hidden="true" />
+      <Method Name="SetFullness" Hidden="true" />
+      <Method Name="SetHasGolograf" Hidden="true" />
+      <Method Name="SetHealth" Hidden="true" />
+      <Method Name="SetName" Hidden="true" />
+      <Method Name="SetRotateSpeed" Hidden="true" />
+      <Method Name="SetSpeed" Hidden="true" />
+      <Method Name="SetWorld" Hidden="true" />
+      <Method Name="StepBackward" Hidden="true" />
+      <Method Name="StepForward" Hidden="true" />
+      <Method Name="StepLeft" Hidden="true" />
+      <Method Name="StepRight" Hidden="true" />
+      <Method Name="Strike" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>wCAGSUAEgoIAAQCAAECAAR5BESEKBBiAAFgD02AghBQ=</HashCode>
+      <FileName>Player.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Unit" Collapsed="true">
+    <Position X="9" Y="4.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAIAAAAAAAAAAAAAEQAQAAAAAAAAA=</HashCode>
+      <FileName>Unit.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Block" Collapsed="true">
+    <Position X="10.5" Y="6.75" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAAAAAAAAAACAAAAAiAAAAAAAABAAAAAAAAA=</HashCode>
+      <FileName>Unit.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Trap" Collapsed="true">
+    <Position X="7.5" Y="6.75" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAADAEAhAAABAEACAAAAAAAAAAAAgABAAAAAAAAA=</HashCode>
+      <FileName>Unit.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Cornucopia" Collapsed="true">
+    <Position X="9" Y="8.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AgAAAAgAAAAAAAAAAESCAEQAAAAABAAAQBgAAAAAAAA=</HashCode>
+      <FileName>Unit.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="World" Collapsed="true">
+    <Position X="1.25" Y="3" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>ACIEBCAIBFAACBACAICIAGFIAgAiAAIAABAAAEgEAAY=</HashCode>
+      <FileName>World.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

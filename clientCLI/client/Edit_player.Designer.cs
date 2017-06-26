@@ -29,7 +29,9 @@
         private void InitializeComponent()
         {
             this.p_net = new System.Windows.Forms.Panel();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.label25 = new System.Windows.Forms.Label();
+            this.tb_name = new System.Windows.Forms.TextBox();
+            this.gr17 = new System.Windows.Forms.GroupBox();
             this.label8 = new System.Windows.Forms.Label();
             this.nud_q_learn = new System.Windows.Forms.NumericUpDown();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
@@ -73,10 +75,8 @@
             this.b_clear = new System.Windows.Forms.Button();
             this.linkLabel1 = new System.Windows.Forms.LinkLabel();
             this.ofd_sourseFile = new System.Windows.Forms.OpenFileDialog();
-            this.label25 = new System.Windows.Forms.Label();
-            this.tb_name = new System.Windows.Forms.TextBox();
             this.p_net.SuspendLayout();
-            this.groupBox2.SuspendLayout();
+            this.gr17.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nud_q_learn)).BeginInit();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nud_rms_eps)).BeginInit();
@@ -103,24 +103,41 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.p_net.Controls.Add(this.label25);
             this.p_net.Controls.Add(this.tb_name);
-            this.p_net.Controls.Add(this.groupBox2);
+            this.p_net.Controls.Add(this.gr17);
             this.p_net.Controls.Add(this.groupBox1);
             this.p_net.Controls.Add(this.groupBox4);
             this.p_net.Location = new System.Drawing.Point(12, 83);
             this.p_net.Name = "p_net";
-            this.p_net.Size = new System.Drawing.Size(743, 355);
+            this.p_net.Size = new System.Drawing.Size(834, 355);
             this.p_net.TabIndex = 1;
             // 
-            // groupBox2
+            // label25
             // 
-            this.groupBox2.Controls.Add(this.label8);
-            this.groupBox2.Controls.Add(this.nud_q_learn);
-            this.groupBox2.Location = new System.Drawing.Point(387, 196);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(353, 52);
-            this.groupBox2.TabIndex = 3;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Параметры Q-Learning:";
+            this.label25.AutoSize = true;
+            this.label25.Location = new System.Drawing.Point(18, 10);
+            this.label25.Name = "label25";
+            this.label25.Size = new System.Drawing.Size(152, 17);
+            this.label25.TabIndex = 29;
+            this.label25.Text = "Название персонажа:";
+            // 
+            // tb_name
+            // 
+            this.tb_name.Location = new System.Drawing.Point(182, 7);
+            this.tb_name.MaxLength = 40;
+            this.tb_name.Name = "tb_name";
+            this.tb_name.Size = new System.Drawing.Size(272, 22);
+            this.tb_name.TabIndex = 0;
+            // 
+            // gr17
+            // 
+            this.gr17.Controls.Add(this.label8);
+            this.gr17.Controls.Add(this.nud_q_learn);
+            this.gr17.Location = new System.Drawing.Point(474, 196);
+            this.gr17.Name = "gr17";
+            this.gr17.Size = new System.Drawing.Size(353, 52);
+            this.gr17.TabIndex = 3;
+            this.gr17.TabStop = false;
+            this.gr17.Text = "Q-Learning";
             // 
             // label8
             // 
@@ -169,7 +186,7 @@
             this.groupBox1.Controls.Add(this.cb_train_type);
             this.groupBox1.Controls.Add(this.label4);
             this.groupBox1.Controls.Add(this.nud_rms_gamma);
-            this.groupBox1.Location = new System.Drawing.Point(387, 42);
+            this.groupBox1.Location = new System.Drawing.Point(474, 42);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(353, 148);
             this.groupBox1.TabIndex = 2;
@@ -334,7 +351,7 @@
             this.groupBox4.Controls.Add(this.cb_fun_act);
             this.groupBox4.Location = new System.Drawing.Point(9, 43);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(372, 301);
+            this.groupBox4.Size = new System.Drawing.Size(459, 301);
             this.groupBox4.TabIndex = 1;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Настройки нейронной сети:";
@@ -377,7 +394,7 @@
             0,
             262144});
             this.nud_train_eps.Name = "nud_train_eps";
-            this.nud_train_eps.Size = new System.Drawing.Size(155, 22);
+            this.nud_train_eps.Size = new System.Drawing.Size(245, 22);
             this.nud_train_eps.TabIndex = 7;
             this.nud_train_eps.Value = new decimal(new int[] {
             1,
@@ -399,7 +416,7 @@
             0,
             0});
             this.nud_max_test_count.Name = "nud_max_test_count";
-            this.nud_max_test_count.Size = new System.Drawing.Size(155, 22);
+            this.nud_max_test_count.Size = new System.Drawing.Size(245, 22);
             this.nud_max_test_count.TabIndex = 4;
             this.nud_max_test_count.Value = new decimal(new int[] {
             1,
@@ -421,7 +438,7 @@
             0,
             0});
             this.nud_sensors.Name = "nud_sensors";
-            this.nud_sensors.Size = new System.Drawing.Size(155, 22);
+            this.nud_sensors.Size = new System.Drawing.Size(245, 22);
             this.nud_sensors.TabIndex = 0;
             this.nud_sensors.Value = new decimal(new int[] {
             4,
@@ -452,7 +469,7 @@
             0,
             0});
             this.nud_hid_neurons.Name = "nud_hid_neurons";
-            this.nud_hid_neurons.Size = new System.Drawing.Size(155, 22);
+            this.nud_hid_neurons.Size = new System.Drawing.Size(245, 22);
             this.nud_hid_neurons.TabIndex = 1;
             this.nud_hid_neurons.Value = new decimal(new int[] {
             8,
@@ -483,7 +500,7 @@
             0,
             0});
             this.nud_hid_layers.Name = "nud_hid_layers";
-            this.nud_hid_layers.Size = new System.Drawing.Size(155, 22);
+            this.nud_hid_layers.Size = new System.Drawing.Size(245, 22);
             this.nud_hid_layers.TabIndex = 2;
             this.nud_hid_layers.Value = new decimal(new int[] {
             1,
@@ -514,7 +531,7 @@
             0,
             0});
             this.nud_test_count.Name = "nud_test_count";
-            this.nud_test_count.Size = new System.Drawing.Size(155, 22);
+            this.nud_test_count.Size = new System.Drawing.Size(245, 22);
             this.nud_test_count.TabIndex = 3;
             this.nud_test_count.Value = new decimal(new int[] {
             1,
@@ -545,7 +562,7 @@
             0,
             0});
             this.nud_train_epoch.Name = "nud_train_epoch";
-            this.nud_train_epoch.Size = new System.Drawing.Size(155, 22);
+            this.nud_train_epoch.Size = new System.Drawing.Size(245, 22);
             this.nud_train_epoch.TabIndex = 5;
             this.nud_train_epoch.Value = new decimal(new int[] {
             1,
@@ -576,7 +593,7 @@
             0,
             0});
             this.nud_train_period.Name = "nud_train_period";
-            this.nud_train_period.Size = new System.Drawing.Size(155, 22);
+            this.nud_train_period.Size = new System.Drawing.Size(245, 22);
             this.nud_train_period.TabIndex = 6;
             this.nud_train_period.Value = new decimal(new int[] {
             1,
@@ -614,7 +631,7 @@
             0,
             0});
             this.nud_end_train.Name = "nud_end_train";
-            this.nud_end_train.Size = new System.Drawing.Size(155, 22);
+            this.nud_end_train.Size = new System.Drawing.Size(245, 22);
             this.nud_end_train.TabIndex = 8;
             this.nud_end_train.Value = new decimal(new int[] {
             1,
@@ -645,17 +662,17 @@
             this.cb_fun_act.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cb_fun_act.FormattingEnabled = true;
             this.cb_fun_act.Items.AddRange(new object[] {
-            "Сигмойда",
+            "Сигмоида",
             "Тангенс гиперболический"});
             this.cb_fun_act.Location = new System.Drawing.Point(208, 268);
             this.cb_fun_act.Name = "cb_fun_act";
-            this.cb_fun_act.Size = new System.Drawing.Size(155, 24);
+            this.cb_fun_act.Size = new System.Drawing.Size(245, 24);
             this.cb_fun_act.TabIndex = 9;
             // 
             // b_save
             // 
             this.b_save.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.b_save.Location = new System.Drawing.Point(299, 444);
+            this.b_save.Location = new System.Drawing.Point(387, 444);
             this.b_save.Name = "b_save";
             this.b_save.Size = new System.Drawing.Size(130, 29);
             this.b_save.TabIndex = 2;
@@ -671,7 +688,7 @@
             this.groupBox5.Controls.Add(this.rb_net);
             this.groupBox5.Location = new System.Drawing.Point(12, 24);
             this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(756, 53);
+            this.groupBox5.Size = new System.Drawing.Size(834, 53);
             this.groupBox5.TabIndex = 0;
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "Вид стратегии игрока";
@@ -710,7 +727,7 @@
             this.p_solve.Controls.Add(this.b_clear);
             this.p_solve.Location = new System.Drawing.Point(12, 83);
             this.p_solve.Name = "p_solve";
-            this.p_solve.Size = new System.Drawing.Size(743, 355);
+            this.p_solve.Size = new System.Drawing.Size(834, 355);
             this.p_solve.TabIndex = 20;
             // 
             // l_filename
@@ -731,7 +748,7 @@
             this.rtf_solve.Location = new System.Drawing.Point(4, 4);
             this.rtf_solve.Margin = new System.Windows.Forms.Padding(4);
             this.rtf_solve.Name = "rtf_solve";
-            this.rtf_solve.Size = new System.Drawing.Size(593, 311);
+            this.rtf_solve.Size = new System.Drawing.Size(684, 311);
             this.rtf_solve.TabIndex = 0;
             this.rtf_solve.Text = "";
             // 
@@ -750,7 +767,7 @@
             // b_clear
             // 
             this.b_clear.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.b_clear.Location = new System.Drawing.Point(605, 13);
+            this.b_clear.Location = new System.Drawing.Point(696, 13);
             this.b_clear.Margin = new System.Windows.Forms.Padding(4);
             this.b_clear.Name = "b_clear";
             this.b_clear.Size = new System.Drawing.Size(125, 28);
@@ -776,28 +793,11 @@
             this.ofd_sourseFile.Filter = "Файл кода C++|*.cpp";
             this.ofd_sourseFile.Title = "Выберите файл решения";
             // 
-            // label25
-            // 
-            this.label25.AutoSize = true;
-            this.label25.Location = new System.Drawing.Point(18, 10);
-            this.label25.Name = "label25";
-            this.label25.Size = new System.Drawing.Size(152, 17);
-            this.label25.TabIndex = 29;
-            this.label25.Text = "Название персонажа:";
-            // 
-            // tb_name
-            // 
-            this.tb_name.Location = new System.Drawing.Point(182, 7);
-            this.tb_name.MaxLength = 40;
-            this.tb_name.Name = "tb_name";
-            this.tb_name.Size = new System.Drawing.Size(272, 22);
-            this.tb_name.TabIndex = 0;
-            // 
             // Edit_player
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(780, 485);
+            this.ClientSize = new System.Drawing.Size(871, 485);
             this.Controls.Add(this.b_save);
             this.Controls.Add(this.groupBox5);
             this.Controls.Add(this.linkLabel1);
@@ -805,11 +805,10 @@
             this.Controls.Add(this.p_solve);
             this.Name = "Edit_player";
             this.Text = "Настройка персонажа";
-            this.Load += new System.EventHandler(this.Edit_player_Load);
             this.p_net.ResumeLayout(false);
             this.p_net.PerformLayout();
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox2.PerformLayout();
+            this.gr17.ResumeLayout(false);
+            this.gr17.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nud_q_learn)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
@@ -880,7 +879,7 @@
         private System.Windows.Forms.LinkLabel linkLabel1;
         private System.Windows.Forms.OpenFileDialog ofd_sourseFile;
         private System.Windows.Forms.Label l_filename;
-        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.GroupBox gr17;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.NumericUpDown nud_q_learn;
         private System.Windows.Forms.Label label25;
