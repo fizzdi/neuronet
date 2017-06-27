@@ -185,7 +185,7 @@ void World::LoadPlayers() {
 
 	////debugout << "Players count: " << PlayerFiles.size() << endl;
 
-	D3DCOLOR Colors[] = { D3DCOLOR_XRGB(255,0,0), D3DCOLOR_XRGB(0,0,255), D3DCOLOR_XRGB(0, 255, 0), D3DCOLOR_XRGB(252, 131, 10) };
+	D3DCOLOR Colors[] = { D3DCOLOR_XRGB(255,255,0), D3DCOLOR_XRGB(0,255,255), D3DCOLOR_XRGB(240, 240, 240), D3DCOLOR_XRGB(252, 131, 10) };
 	pair<int, int> Coords[] = { {320, 240}, {540, 100}, {100, 380}, {540, 380} };
 
 	for (int i = 0; i < PlayerFiles.size(); ++i) {
@@ -207,7 +207,7 @@ void World::LoadPlayers() {
 				//NewPlayer->SetFullness(300);
 				NewPlayer->SetFullness(1);
 				//NewPlayer->SetHealth(1000);
-				NewPlayer->SetHealth(INT_MAX);
+				NewPlayer->SetHealth(5000);
 				NewPlayer->SetColor(Colors[i]);
 				//debugout << "Player " << PlayerFiles[i] << " library begin init" << endl;
 				NewPlayer->Init();
@@ -314,7 +314,7 @@ void World::UpdateBonuses() {
 
 void World::Render() {
 	////debugout << "Render start" << endl;
-	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(10, 10, 10), 1.0f, 0);
+	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
 
 	d3ddev->BeginScene();    // begins the 3D scene
 

@@ -128,6 +128,7 @@ namespace client
                     res = res.Replace("{0}", ((Decimal)pl[13]).ToString("0.00000000", CultureInfo.InvariantCulture));
                     res = res.Replace("{1}", (string)pl[14]);
                     res = res.Replace("{2}", (string)pl[15]);
+                    //MessageBox.Show((string)pl[14]);
                     File.WriteAllText("solutions\\" + pl_str + "\\MyPlayer.cpp", res);
                 }
                 n++;

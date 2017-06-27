@@ -1,7 +1,7 @@
 #include "Bonus.h"
 
 void Food::Render(LPDIRECT3DDEVICE9 d3ddev) {
-	D3DCOLOR Color = D3DCOLOR_XRGB(246, 115, 15); //Orange
+	D3DCOLOR Color = D3DCOLOR_XRGB(204, 204, 255); //Orange
 	RenderCircle(d3ddev, GetX(), GetY(), GetR(), Color);
 }
 

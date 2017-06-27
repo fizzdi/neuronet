@@ -130,7 +130,7 @@ namespace client
                 p_opt.Clear();
                 string filename;
                 Directory.CreateDirectory("temp");
-                if (File.Exists("temp\\"+l_filename.Text))
+                if (File.Exists("temp\\" + l_filename.Text))
                     filename = "temp\\" + l_filename.Text;
                 else
                     filename = string.Format("temp\\{0}{1}.cpp", DateTime.Now.Millisecond.ToString(), DateTime.Now.Minute.ToString());
@@ -143,7 +143,11 @@ namespace client
 
         private void Edit_player_Load(object sender, EventArgs e)
         {
+        }
 
+        private void cb_train_type_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            nud_rms_eps.Enabled = nud_rms_gamma.Enabled = nud_rms_learnrate.Enabled = cb_train_type.SelectedIndex == 0;
         }
     }
 }

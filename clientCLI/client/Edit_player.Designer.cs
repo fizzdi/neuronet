@@ -287,6 +287,7 @@
             this.cb_train_type.Name = "cb_train_type";
             this.cb_train_type.Size = new System.Drawing.Size(155, 24);
             this.cb_train_type.TabIndex = 0;
+            this.cb_train_type.SelectedIndexChanged += new System.EventHandler(this.cb_train_type_SelectedIndexChanged);
             // 
             // label4
             // 

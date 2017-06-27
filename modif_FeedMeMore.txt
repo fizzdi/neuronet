@@ -1,0 +1,49 @@
+#include "MyPlayer.h"
+#include "World.h"
+#include <vector>
+#include <iostream>
+#include <queue>
+#include <set>
+#include <map>
+#include <math.h>
+using namespace std;
+
+void MyPlayer::Init()
+{
+	SetName(L"FeedMeMore");
+
+}
+int PosX = -1, PosY = -1;
+int Radius = 0;
+void MyPlayer::Move() {
+	World* world = GetWorld();
+	int SizeX = world->GetHeight();
+	int SizeY = world->GetWidth();
+	int curPosX = GetX(), curPosY = GetY();
+	if (abs(curPosX - PosX)*abs(curPosX - PosX) + abs(curPosY - PosY)*abs(curPosY - PosY) <= Radius*Radius)
+	{
+		PosX = -1;
+		PosY = -1;
+		Radius = -1;
+	}
+	if (PosX == -1 && PosY == -1)
+	{
+		vector<Food*>food = world->GetFood();
+		set<pair<int, int>> ThereIsFood;
+		int MaxDist = (int)2e9;
+		for (int i = 0; i < food.size(); i++)
+		{
+			int x = food[i]->GetX();
+			int y = food[i]->GetY();
+			if (abs(x - curPosX) + abs(y - curPosY) < MaxDist)
+			{
+				MaxDist = abs(x - curPosX) + abs(y - curPosY);
+				PosX = x;
+				PosY = y;
+				Radius = food[i]->GetR();
+			}
+		}
+	}
+
+	MoveTo(PosX, PosY);
+}
