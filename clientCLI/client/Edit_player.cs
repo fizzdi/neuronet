@@ -126,10 +126,14 @@ namespace client
             }
             else
             {
+
                 p_opt.Clear();
                 string filename;
                 Directory.CreateDirectory("temp");
-                filename = string.Format("temp\\{0}{1}.cpp", DateTime.Now.Millisecond.ToString(), DateTime.Now.Minute.ToString());
+                if (File.Exists("temp\\"+l_filename.Text))
+                    filename = "temp\\" + l_filename.Text;
+                else
+                    filename = string.Format("temp\\{0}{1}.cpp", DateTime.Now.Millisecond.ToString(), DateTime.Now.Minute.ToString());
                 File.WriteAllText(filename, rtf_solve.Text);
                 p_opt.Add(filename);
             }

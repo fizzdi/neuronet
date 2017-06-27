@@ -140,7 +140,7 @@ namespace client
             //-----
 
             var lib = LoadLibrary("solve_compiller.dll");
-            
+
             using (StreamWriter wr = new StreamWriter("dlldebug.txt"))
             {
                 if (lib == IntPtr.Zero)
@@ -183,7 +183,7 @@ namespace client
         {
             string str = lb_players.SelectedItem.ToString();
             int num = str[str.Length - 1] - '0';
-            nums[num-1] = false;
+            nums[num - 1] = false;
             players.RemoveAt(lb_players.SelectedIndex);
             b_add_player.Enabled = true;
             lb_players.Items.RemoveAt(lb_players.SelectedIndex);
@@ -203,7 +203,11 @@ namespace client
                 {
                     // sw.Write(players[i].Count + " ");
                     for (int j = 0; j < players[i].Count(); ++j)
-                        sw.Write(players[i][j] + " ");
+                    {
+                        sw.Write(players[i][j]);
+                        if (j != players[i].Count - 1)
+                            sw.Write(" ");
+                    }
                     sw.WriteLine();
                 }
             }
